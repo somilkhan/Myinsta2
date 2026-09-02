@@ -3,13 +3,13 @@ package dev.zehen.myinsta2
 /**
  * MyInsta feature inventory.
  *
- * These are kept as capabilities until a target-specific bytecode implementation
- * is verified against the current Instagram build. A capability is deliberately
- * not exposed as a working patch until its fingerprint is proven on-device.
+ * Keep this list capability-oriented: a capability is only promoted to a
+ * verified patch after its target fingerprint and runtime behavior are tested.
  */
 enum class Feature(val key: String, val title: String) {
     GHOST_MODE("ghost_mode", "Ghost Mode"),
     ANTI_REVOKE("anti_revoke", "Anti Revoke"),
+    HIDE_ADS("hide_ads", "Hide Ads"),
     DISTRACTION_FREE("distraction_free", "Distraction Free"),
     DOWNLOAD_POSTS("download_posts", "Download Posts"),
     DOWNLOAD_REELS("download_reels", "Download Reels"),
