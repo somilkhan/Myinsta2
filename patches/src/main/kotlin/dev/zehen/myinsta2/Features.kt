@@ -10,6 +10,7 @@ enum class Feature(val key: String, val title: String) {
     GHOST_MODE("ghost_mode", "Ghost Mode"),
     ANTI_REVOKE("anti_revoke", "Anti Revoke"),
     HIDE_ADS("hide_ads", "Hide Ads"),
+    DISABLE_STORY_AUTO_FLIPPING("disable_story_auto_flipping", "Disable Story Auto-Flipping"),
     DISTRACTION_FREE("distraction_free", "Distraction Free"),
     DOWNLOAD_POSTS("download_posts", "Download Posts"),
     DOWNLOAD_REELS("download_reels", "Download Reels"),
