@@ -11,9 +11,9 @@ This matrix intentionally separates APK evidence from an implemented Morphe hook
 | Anti-Revoke notification | `message_revoked`, `revoke_notification` | Implemented | Patch APK + revoke runtime |
 | Hide Ads | `Is ad pod` | Implemented | Patch APK + feed/reels runtime |
 | Story auto-flip | `ReelViewerFragment`, `userSession` | Implemented | Patch APK + story runtime |
-| Download posts | `DownloadOptionsBottomSheetFragment` | Mapping required | Identify method + call path |
-| Download reels | `DownloadOptionsBottomSheetFragment` | Mapping required | Identify method + call path |
-| DM media download | `DirectThreadFragment.saveMessageMedia` | Mapping required | Identify exact method signature |
+| Download posts | `MediaOptionsOverflowHelper`, `DownloadOptionsBottomSheetFragment` | Fingerprints added; hook required | Confirm method body + overflow integration |
+| Download reels | `ClipsOrganicMediaItemViewMoreOptionsController`, `reels` | Fingerprints added; hook required | Confirm method body + overflow integration |
+| DM media download | `DirectThreadMediaSaver`, `saveMessageMedia` | Fingerprints added; hook required | Confirm exact method signature + saver path |
 | Copy bio | `accounts/set_biography/`, `profile_bio` | Mapping required | Identify profile UI/bio binding |
 | Copy comments | — | Mapping required | Identify comment text holder |
 | Copy messages | — | Mapping required | Identify message text holder |
