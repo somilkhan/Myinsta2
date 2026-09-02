@@ -12,17 +12,12 @@ patches {
     }
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xcontext-parameters")
-    }
-}
-
 val patchListGeneratorClasspath = configurations.create("patchListGeneratorClasspath")
 
 dependencies {
-    compileOnly("com.google.code.gson:gson:2.13.1")
-    patchListGeneratorClasspath("com.google.code.gson:gson:2.13.1")
+    compileOnly(libs.morphe.patches.library)
+    compileOnly(libs.gson)
+    patchListGeneratorClasspath(libs.gson)
 }
 
 tasks {
@@ -35,5 +30,11 @@ tasks {
 
     named("publish") {
         dependsOn("generatePatchesList")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }
