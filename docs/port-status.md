@@ -4,14 +4,18 @@ Target: Instagram `445.0.0.45.83` / version code `385111379` / arm64-v8a.
 
 Reference: MyInsta v26.0 based on Instagram `364.0.0.35.86`.
 
-A feature is marked **ported** only when its 445 implementation exists and the patch builds against the target. It is marked **verified** only after runtime testing.
+A feature is marked **ported** only when its 445 implementation exists and its fingerprint has been matched against the target bytecode. It is marked **verified** only after runtime testing on the target release.
 
 | Feature | 364 reference | 445 port | Runtime | Notes |
 |---|---:|---:|---:|---|
-| Ghost Mode | yes | pending | pending | Requires fresh 445 fingerprints |
+| Ghost Mode — DM seen | yes | ported | pending | `mark_thread_seen-` fingerprint matches the supplied 445 APK; runtime confirmation still required |
+| Ghost Mode — story seen | yes | pending | pending | Current 445 story-seen path needs a safe target mapping |
+| Ghost Mode — live seen | yes | pending | pending | Current 445 live heartbeat path needs a safe target mapping |
+| Ghost Mode — typing status | yes | pending | pending | Requires current DM typing path |
+| Anti-Revoke | yes | pending | pending | Requires current DM event/message path |
+| Hide Ads | yes | ported | pending | `Is ad pod` fingerprint matches the supplied 445 APK |
 | Downloads | yes | pending | pending | Posts/reels/media paths need target mapping |
-| Distraction Free | yes | pending | pending | Feed/reels/stories/explore paths need target mapping |
-| Anti-Revoke | yes | pending | pending | Requires current DM event path |
+| Distraction Free | yes | partial | pending | Ad suppression is ported; feed/reels/stories/explore paths still need target mapping |
 | Copy helpers | yes | pending | pending | Bio/comments/messages are separate hooks |
 | Avatar zoom | yes | pending | pending | Media viewer changed across releases |
 | Follows indicator | yes | pending | pending | Profile row binding needs target mapping |
@@ -21,13 +25,19 @@ A feature is marked **ported** only when its 445 implementation exists and the p
 | Monet/theme | yes | pending | pending | Resource/UI implementation required |
 | OTA | yes | pending | pending | Update mechanism should not be coupled to Instagram release checks |
 
+## Target evidence
+
+The supplied Library artifact was reconstructed as `base.apk` from `base.zip.001` + `base.zip.002`. Its embedded version string is `445.0.0.45.83`, confirming that the available APK is the repository's 445 target rather than 443.
+
 ## Current verified work
 
 - Morphe patch project metadata is configured for Instagram 445.
 - Target version and version code are pinned.
 - Vendor APK/APKM files are excluded from Git.
 - CI builds an `.mpp` bundle without requiring a local Gradle installation.
+- The Ghost Mode DM fingerprint was matched against the supplied 445 bytecode.
+- The Hide Ads fingerprint was matched against the supplied 445 bytecode.
 
 ## Not claimed yet
 
-No MyInsta feature is currently marked ported or verified. The source APK contains the reference implementation, but its implementation must be mapped to the 445 bytecode before it is safe to ship.
+No feature is marked **runtime verified** until the resulting Morphe-patched Instagram 445 build is actually exercised. Runtime testing requires installing/running the patched APK; CI alone cannot prove Instagram behavior.
