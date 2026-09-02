@@ -1,0 +1,27 @@
+.gradle/
+.idea/
+**/build/
+local.properties
+*.iml
+
+# Vendor binaries and local patch inputs
+*.apk
+*.apkm
+*.xapk
+*.apks
+*.aab
+
+# Signing material
+*.jks
+*.keystore
+*.p12
+
+# Local Morphe outputs
+*.mpp
+*.mpe
+*.asc
+
+# Generated release metadata
+patches-list.json
+patches-bundle.json
+CHANGELOG.md
