@@ -5,10 +5,13 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-/** Instagram 445 ad-pod predicate. */
+/** Exact Instagram 445 ad-pod predicate mapping. */
 private object AdPodFingerprint : Fingerprint(
+    name = "A02",
+    definingClass = "LX/4jB;",
     returnType = "Z",
     parameters = listOf(
+        "LX/4jB;",
         "LX/9il;",
         "LX/4oh;",
     ),
@@ -24,10 +27,6 @@ val hideAdsPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        AdPodFingerprint.method.addInstructions(
-            0,
-            "const/4 v0, 0x0",
-            "return v0",
-        )
+        AdPodFingerprint.method.addInstructions(0, "const/4 v0, 0x0", "return v0")
     }
 }
