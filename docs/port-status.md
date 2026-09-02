@@ -11,7 +11,7 @@ A feature is marked **ported** only when its 445 implementation exists and its f
 | Ghost Mode — DM seen | yes | ported | pending | `mark_thread_seen-` fingerprint matches the supplied 445 APK; runtime confirmation still required |
 | Ghost Mode — story seen | yes | pending | pending | Current 445 story-seen path needs a safe target mapping |
 | Ghost Mode — live seen | yes | pending | pending | Current 445 live heartbeat path needs a safe target mapping |
-| Ghost Mode — typing status | yes | ported | pending | `direct_v2/threads/%s/toggle_typing_indicator/` target mapped to the 445 typing-indicator request path |
+| Ghost Mode — typing status | yes | ported | pending | 445 `direct_v2/threads/%s/toggle_typing_indicator_control/` request path mapped to `LX/5nq;->Geu(...)V` |
 | Anti-Revoke notification | yes | ported | pending | 445 `message_revoked` / `revoke_notification` receiver path mapped; runtime confirmation still required |
 | Hide Ads | yes | ported | pending | `Is ad pod` fingerprint matches the supplied 445 APK and returns `Z` |
 | Disable Story Auto-Flipping | yes | ported | pending | `ReelViewerFragment` timeout action fingerprint matches the supplied 445 APK |
