@@ -4,9 +4,8 @@ import app.morphe.patcher.Fingerprint
 
 /**
  * Exact Instagram 445 anchors derived from the supplied base.apk.
- * These are the integration points used by the downloader port; they are
- * kept separate from the implementation until the required extension/data
- * layer is wired in.
+ * These anchors identify the integration points; the executable downloader
+ * layer is kept separate until its extension/data dependencies are wired.
  */
 internal object MediaOptionsOverflowHelperFingerprint : Fingerprint(
     name = "A09",
@@ -20,14 +19,8 @@ internal object ReelMoreOptionsFingerprint : Fingerprint(
     name = "A08",
     definingClass = "LX/9Tx;",
     parameters = listOf(
-        "Landroid/view/View;",
-        "LX/1Pg;",
-        "LX/9PM;",
-        "Lcom/instagram/feed/media/Media;",
-        "LX/9Tx;",
-        "Z",
-        "Z",
-        "Z",
+        "Landroid/view/View;", "LX/1Pg;", "LX/9PM;",
+        "Lcom/instagram/feed/media/Media;", "LX/9Tx;", "Z", "Z", "Z",
     ),
     returnType = "V",
     strings = listOf("ClipsOrganicMediaItemViewMoreOptionsController"),
@@ -47,9 +40,9 @@ internal object MediaOptionsOverflowMenuCreatorFingerprint : Fingerprint(
     strings = listOf("MediaOptionsOverflowMenuCreator"),
 )
 
+/** `saveMessageMedia` is a target-side log/action label, not a stable method name. */
 internal object DirectThreadSaveMessageMediaFingerprint : Fingerprint(
-    name = "saveMessageMedia",
-    definingClass = "Lcom/instagram/direct/fragment/DirectThreadFragment;",
+    strings = listOf("DirectThreadFragment.saveMessageMedia"),
 )
 
 internal object CopyTextToStringFingerprint : Fingerprint(
