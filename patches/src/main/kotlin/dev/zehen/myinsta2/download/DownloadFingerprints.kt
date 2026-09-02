@@ -10,7 +10,7 @@ import app.morphe.patcher.Fingerprint
  * mapped. This prevents a string-only match from becoming a crash-prone hook.
  */
 internal object MediaOptionsOverflowHelperFingerprint : Fingerprint(
-    parameters = listOf("Lcom/instagram/feed/media/mediaoption/MediaOption$Option;"),
+    parameters = listOf("Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"),
     strings = listOf("MediaOptionsOverflowHelper"),
     returnType = "V",
 )
