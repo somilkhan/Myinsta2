@@ -1,37 +1,43 @@
 # myinsta2 by zehen
 
-A versioned engineering workspace for porting the MyInsta modification set onto a current stable Instagram Android base.
+Morphe patches for Instagram, maintained as a versioned patch set rather than a repackaged Instagram distribution.
 
-## Project rules
+## Target
 
-- Keep the original MyInsta reference build untouched.
-- Target stable Instagram builds only unless explicitly changed.
-- Do not commit proprietary Instagram APK binaries or extracted proprietary code.
-- Track each modification as a discrete, testable port.
-- No feature is marked complete until it passes static and runtime regression checks.
+- Package: `com.instagram.android`
+- Release: `445.0.0.45.83`
+- Version code: `385111379`
+- Architecture: arm64-v8a
+- Minimum Android: 9
+- Target SHA-1: `5b6e9ef060d157947ea8507b3f8ee87dc8078ed1`
 
-## Current baseline
+The target is pinned deliberately. A patch is not considered compatible with another Instagram release until it has been validated against that release.
 
-- Source mod: MyInsta v26.0
-- Source Instagram base: 364.0.0.35.86
-- Target: Instagram 445.0.0.45.83 stable
-- Project: myinsta2 by zehen
+## What this project ports
 
-## Port order
+The reference implementation is MyInsta v26.0, based on Instagram 364.0.0.35.86. The port is being rebuilt as native Morphe patches so the result can be applied to an untouched Instagram APK/APKM from Morphe Manager.
 
-1. Workspace and reproducibility
-2. APK/DEX/resource inventory
-3. Hook mapping 364 -> 445
-4. Settings infrastructure
-5. Downloads
-6. Ghost Mode
-7. Distraction Free / ad filtering
-8. Copy and privacy features
-9. Avatar zoom / media quality
-10. Experiments / developer tools
-11. Theme and miscellaneous features
-12. Build, signing, static validation and regression testing
+Feature families include privacy controls, downloads, distraction controls, media utilities, copy helpers, profile/media viewing improvements, experiment tooling, and the MyInsta settings surface.
+
+## Build
+
+```bash
+./gradlew buildAndroid
+```
+
+The build produces an `.mpp` bundle under `patches/build/libs/`.
+
+Do not commit Instagram APKs/APKM bundles, generated patch indexes, or signing material. Supply the original target APK through Morphe when patching.
+
+## Development rules
+
+- Fingerprints must be anchored to stable method/type evidence, not arbitrary offsets.
+- Every Instagram target version is explicitly declared in compatibility metadata.
+- A patch is `ported` only after it builds and matches the target bytecode.
+- A patch is `verified` only after runtime testing on the target release.
+- Failed optional patches must not make the base Instagram app unusable.
+- Generated release metadata is maintained by the Morphe release workflow.
 
 ## Status
 
-Repository initialized. Binary inputs remain local and are not committed to this repository.
+The repository contains the Morphe build foundation and target manifest. Feature ports are tracked in `docs/port-status.md` and are not marked complete until validated.
