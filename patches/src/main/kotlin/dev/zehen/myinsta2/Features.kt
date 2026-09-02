@@ -1,21 +1,21 @@
 package dev.zehen.myinsta2
 
 /**
- * The public feature surface of MyInsta2.
+ * MyInsta feature inventory.
  *
- * Keep this list aligned with the settings UI and port-status documentation.
- * A feature is exposed only after its implementation is compatible with the
- * target Instagram release.
+ * These are kept as capabilities until a target-specific bytecode implementation
+ * is verified against the current Instagram build. A capability is deliberately
+ * not exposed as a working patch until its fingerprint is proven on-device.
  */
-enum class MyInsta2Feature {
-    GHOST_MODE,
-    DOWNLOADS,
-    DISTRACTION_FREE,
-    PRIVACY,
-    COPY_TO_CLIPBOARD,
-    MEDIA_TOOLS,
-    PROFILE_MEDIA,
-    THEMES,
-    EXPERIMENTS,
-    DEVELOPER_TOOLS,
+enum class Feature(val key: String, val title: String) {
+    GHOST_MODE("ghost_mode", "Ghost Mode"),
+    ANTI_REVOKE("anti_revoke", "Anti Revoke"),
+    DISTRACTION_FREE("distraction_free", "Distraction Free"),
+    DOWNLOAD_POSTS("download_posts", "Download Posts"),
+    DOWNLOAD_REELS("download_reels", "Download Reels"),
+    AVATAR_ZOOM("avatar_zoom", "Avatar Zoom"),
+    COPY_BIO("copy_bio", "Copy Bio"),
+    INSTASMASH("instasmash", "Instasmash"),
 }
+
+internal val supportedFeatures = Feature.entries.toSet()
