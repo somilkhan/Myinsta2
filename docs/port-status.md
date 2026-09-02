@@ -14,8 +14,9 @@ A feature is marked **ported** only when its 445 implementation exists and its f
 | Ghost Mode — typing status | yes | pending | pending | Requires current DM typing path |
 | Anti-Revoke | yes | pending | pending | Requires current DM event/message path |
 | Hide Ads | yes | ported | pending | `Is ad pod` fingerprint matches the supplied 445 APK |
+| Disable Story Auto-Flipping | yes | ported | pending | `ReelViewerFragment` timeout action fingerprint matches the supplied 445 APK |
 | Downloads | yes | pending | pending | Posts/reels/media paths need target mapping |
-| Distraction Free | yes | partial | pending | Ad suppression is ported; feed/reels/stories/explore paths still need target mapping |
+| Distraction Free | yes | partial | pending | Ad suppression and story auto-flip controls are ported; feed/reels/stories/explore paths still need target mapping |
 | Copy helpers | yes | pending | pending | Bio/comments/messages are separate hooks |
 | Avatar zoom | yes | pending | pending | Media viewer changed across releases |
 | Follows indicator | yes | pending | pending | Profile row binding needs target mapping |
@@ -37,6 +38,7 @@ The supplied Library artifact was reconstructed as `base.apk` from `base.zip.001
 - CI builds an `.mpp` bundle without requiring a local Gradle installation.
 - The Ghost Mode DM fingerprint was matched against the supplied 445 bytecode.
 - The Hide Ads fingerprint was matched against the supplied 445 bytecode.
+- The Story Auto-Flipping fingerprint was matched against the supplied 445 bytecode.
 
 ## Not claimed yet
 
