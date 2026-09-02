@@ -6,12 +6,9 @@ import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
- * Instagram 445 routes the direct typing-indicator request through this
- * method. Returning before the request is emitted prevents the local typing
- * event from being sent while leaving ordinary messaging intact.
- *
- * This is intentionally separate from DM-seen Ghost Mode so users can enable
- * the two privacy controls independently in Morphe.
+ * Instagram 445 routes the direct typing-indicator control request through
+ * this endpoint. The exact 445 string is used so this patch cannot silently
+ * match an unrelated method in a future release.
  */
 private object TypingIndicatorRequestFingerprint : Fingerprint(
     returnType = "V",
@@ -20,7 +17,7 @@ private object TypingIndicatorRequestFingerprint : Fingerprint(
         "LX/Ovs;",
         "LX/ADU;",
     ),
-    strings = listOf("direct_v2/threads/%s/toggle_typing_indicator/"),
+    strings = listOf("direct_v2/threads/%s/toggle_typing_indicator_control/"),
 )
 
 @Suppress("unused")
