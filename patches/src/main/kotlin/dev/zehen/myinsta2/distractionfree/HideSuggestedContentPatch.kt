@@ -1,12 +1,16 @@
 package dev.zehen.myinsta2.distractionfree
 
-import app.morphe.library.instagram.utility.replaceJsonFieldWithBogus
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-private val SUGGESTED_CONTENT_KEYS = arrayOf(
+/**
+ * Exact 445 suggestion-parser anchor. The implementation is intentionally
+ * disabled until the target-side JSON utility is available in the patch
+ * library; keeping the fingerprint here documents the verified target mapping
+ * without breaking the Morphe bundle build.
+ */
+private val SUGGESTED_CONTENT_KEYS = listOf(
     "clips_netego",
     "stories_netego",
     "in_feed_survey",
@@ -22,27 +26,21 @@ private val SUGGESTED_CONTENT_KEYS = arrayOf(
     "suggested_shops",
 )
 
+@Suppress("unused")
 private object FeedItemParseFromJsonFingerprint : Fingerprint(
     name = "unsafeParseFromJson",
-    strings = SUGGESTED_CONTENT_KEYS.toList(),
+    strings = SUGGESTED_CONTENT_KEYS,
 )
-
-private context(_: BytecodePatchContext)
-fun hideSuggestedContent() {
-    SUGGESTED_CONTENT_KEYS.forEach { key ->
-        replaceJsonFieldWithBogus(key)
-    }
-}
 
 @Suppress("unused")
 val hideSuggestedContentPatch = bytecodePatch(
     name = "Hide suggested content",
-    description = "Filters suggested feed, reel and story recommendation items on Instagram 445.",
+    description = "445 suggestion parser anchor; executable filtering is pending a target-side JSON hook.",
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        FeedItemParseFromJsonFingerprint.method.hideSuggestedContent()
+        FeedItemParseFromJsonFingerprint.method
     }
 }
