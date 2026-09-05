@@ -2,19 +2,20 @@ package dev.zehen.myinsta2.ghostmode
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
-import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.util.indexOfFirstInstruction
-import app.morphe.util.registersUsed
-import com.android.tools.smali.dexlib2.Opcode
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
- * Instagram's story-seen URI builder. The final boolean controls whether the
- * seen operation is emitted. For a selected patch, force that value off.
+ * Exact Instagram 445 story-seen URI builder hook.
+ *
+ * The target 445 DEX maps the request builder to LX/0hI;->A06. Keep the
+ * fingerprint bound to that method rather than selecting an arbitrary boolean
+ * method from the matched class.
  */
 private object StorySeenUriBuilderFingerprint : Fingerprint(
+    definingClass = "LX/0hI;",
+    name = "A06",
+    returnType = "Z",
     strings = listOf("media/seen/?reel=%s&live_vod=0"),
 )
 
@@ -27,17 +28,15 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        StorySeenUriBuilderFingerprint.classDef.methods
-            .last { it.returnType == "Z" }
-            .apply {
-                val lastIfEqzIndex = instructions.last { it.opcode == Opcode.IF_EQZ }.location.index
-                val returnIndex = indexOfFirstInstruction(lastIfEqzIndex, Opcode.RETURN)
-                val resultRegister = getInstruction(returnIndex).registersUsed[0]
+        val method = StorySeenUriBuilderFingerprint.method
+        val returnInstruction = method.implementation!!.instructions
+            .indexOfFirst { it.opcode.name.startsWith("RETURN") }
 
-                addInstructions(
-                    returnIndex,
-                    "const/4 v$resultRegister, 0x0",
-                )
-            }
+        require(returnInstruction >= 0) { "Instagram 445 story-seen builder has no return instruction" }
+
+        method.addInstructions(
+            returnInstruction,
+            "const/4 v0, 0x0",
+        )
     }
 }
