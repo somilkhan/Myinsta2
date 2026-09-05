@@ -27,6 +27,12 @@ val hideAdsPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        AdPodFingerprint.method.addInstructions(0, "const/4 v0, 0x0", "return v0")
+        AdPodFingerprint.method.addInstructions(
+            0,
+            """
+            const/4 v0, 0x0
+            return v0
+            """.trimIndent(),
+        )
     }
 }
