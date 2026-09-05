@@ -6,11 +6,12 @@ import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
- * Prevents the live viewer-count heartbeat from being sent. This is the
- * network-side privacy hook needed for anonymous live viewing; it is kept
- * separate from the story-seen hook so either feature can be selected alone.
+ * Prevents the live viewer-count heartbeat from being sent. The fingerprint's
+ * matched method is patched directly; do not guess a method from the containing
+ * class because Instagram 445 contains many unrelated void methods.
  */
 private object LiveHeartbeatFingerprint : Fingerprint(
+    returnType = "V",
     strings = listOf("/live/%s/heartbeat_and_get_viewer_count/"),
 )
 
@@ -23,9 +24,6 @@ val viewLiveAnonymouslyPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        LiveHeartbeatFingerprint.classDef.methods
-            .filter { it.returnType == "V" && it.parameters.size >= 1 }
-            .maxBy { it.parameters.size }
-            .addInstructions(0, "return-void")
+        LiveHeartbeatFingerprint.method.addInstructions(0, "return-void")
     }
 }
