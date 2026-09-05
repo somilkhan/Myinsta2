@@ -37,9 +37,10 @@ The target bytecode was inspected directly. Current target evidence includes the
 - Morphe patch project metadata is configured for Instagram 445.
 - Target version and version code are pinned.
 - Vendor APK/APKM files are excluded from Git.
-- Previous CI successfully produced the `.mpp` bundle.
+- **CI build verified successfully on 2026-09-05:** GitHub Actions run `33947354306` completed successfully on commit `7f9de43ab5b62ef34cf4d71e4b939334ae3ae60e`.
+- The run produced the `myinsta2-morphe-patches` `.mpp` artifact (artifact ID `9963750082`, SHA-256 `0f3e124605af8d1696db297210475747953eddd0e8bc9495ed44d0c98c38e559`).
 - Ghost Mode DM, Ghost Mode typing, Anti-Revoke notification, Hide Ads, and Story Auto-Flipping now have explicit 445 patch implementations.
 
 ## Not claimed yet
 
-No feature is marked **runtime verified** until the resulting Morphe-patched Instagram 445 build is actually exercised. Runtime testing requires installing/running the patched APK; CI alone cannot prove Instagram behavior.
+No feature is marked **runtime verified** until the resulting Morphe-patched Instagram 445 build is actually exercised. CI proves that the patch bundle compiles and packages correctly; it cannot prove Instagram runtime behavior.
