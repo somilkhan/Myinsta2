@@ -9,6 +9,7 @@ import dev.zehen.myinsta2.ghostmode.ghostModeTypingPatch
 import dev.zehen.myinsta2.ghostmode.viewLiveAnonymouslyPatch
 import dev.zehen.myinsta2.ghostmode.viewStoriesAnonymouslyPatch
 import dev.zehen.myinsta2.stories.disableStoryAutoFlipPatch
+import dev.zehen.myinsta2.stories.disableVideoAutoplayPatch
 
 /** MyInsta2 feature bundle for Instagram 445. */
 @Suppress("unused")
@@ -25,6 +26,7 @@ val myInsta2Patch = bytecodePatch(
         antiRevokePatch,
         hideAdsPatch,
         disableStoryAutoFlipPatch,
+        disableVideoAutoplayPatch,
         hideSuggestedContentPatch,
     )
 }
