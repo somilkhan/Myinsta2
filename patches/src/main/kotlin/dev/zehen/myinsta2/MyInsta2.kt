@@ -6,14 +6,10 @@ import dev.zehen.myinsta2.distractionfree.hideSuggestedContentPatch
 import dev.zehen.myinsta2.ghostmode.antiRevokePatch
 import dev.zehen.myinsta2.ghostmode.ghostModePatch
 import dev.zehen.myinsta2.ghostmode.ghostModeTypingPatch
+import dev.zehen.myinsta2.ghostmode.viewStoriesAnonymouslyPatch
 import dev.zehen.myinsta2.stories.disableStoryAutoFlipPatch
 
-/**
- * MyInsta2 patch bundle entry point.
- *
- * The bundle depends only on executable 445 implementations. Version-specific
- * mappings that are not yet proven are intentionally kept out of the bundle.
- */
+/** MyInsta2 feature bundle for Instagram 445. */
 @Suppress("unused")
 val myInsta2Patch = bytecodePatch(
     name = "MyInsta2",
@@ -23,6 +19,7 @@ val myInsta2Patch = bytecodePatch(
     dependsOn(
         ghostModePatch,
         ghostModeTypingPatch,
+        viewStoriesAnonymouslyPatch,
         antiRevokePatch,
         hideAdsPatch,
         disableStoryAutoFlipPatch,
