@@ -1,10 +1,10 @@
 package dev.zehen.myinsta2
 
 /**
- * Verified Instagram 445 capability inventory.
+ * Instagram 445 capability inventory.
  *
- * Only production-validated hooks are listed here. Experimental 445 work stays
- * out of this inventory until patch application and runtime behavior are proven.
+ * Experimental hooks remain outside this inventory until their patching and
+ * runtime behavior are proven on the target release.
  */
 enum class Feature(val key: String, val title: String) {
     GHOST_MODE("ghost_mode", "Ghost Mode"),
@@ -13,6 +13,7 @@ enum class Feature(val key: String, val title: String) {
     ANTI_REVOKE("anti_revoke", "Anti Revoke"),
     HIDE_ADS("hide_ads", "Hide Ads"),
     DISABLE_VIDEO_AUTOPLAY("disable_video_autoplay", "Disable Video Autoplay"),
+    DISABLE_STORY_AUTO_FLIP("disable_story_auto_flip", "Disable Story Auto-Flipping"),
 }
 
 internal val supportedFeatures = setOf(
@@ -22,4 +23,5 @@ internal val supportedFeatures = setOf(
     Feature.ANTI_REVOKE,
     Feature.HIDE_ADS,
     Feature.DISABLE_VIDEO_AUTOPLAY,
+    Feature.DISABLE_STORY_AUTO_FLIP,
 )
