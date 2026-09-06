@@ -2,15 +2,16 @@ package dev.zehen.myinsta2.stories
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.util.returnEarly
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
- * Exact Instagram 445 candidate for the story auto-flipping controller.
+ * Instagram 445 story-timeout callback.
  *
- * ReelViewerFragment.Fji(Object) matches the known story auto-flipping
- * fingerprint shape (return V, Object parameter, and "userSession" string).
- * The controller role is not yet runtime-validated, so this remains a
- * validation-only anchor and performs no rewrite.
+ * This is the same structural callback used by the established Morphe
+ * implementation: Object parameter + void return + userSession string in
+ * ReelViewerFragment. Returning before the timeout action prevents the
+ * automatic transition while leaving manual story navigation intact.
  */
 private object StoryAutoFlipFingerprint : Fingerprint(
     definingClass = "Linstagram/features/stories/fragment/ReelViewerFragment;",
@@ -23,14 +24,12 @@ private object StoryAutoFlipFingerprint : Fingerprint(
 @Suppress("unused")
 val disableStoryAutoFlipPatch = bytecodePatch(
     name = "Disable Story Auto-Flipping",
-    description = "Opt-in Instagram 445 story auto-advance research anchor; disabled until the exact controller callback is runtime-validated.",
-    default = false,
+    description = "Disable stories automatically flipping/skipping after the timeout.",
+    default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // Fji is an exact 445 structural candidate, but its runtime control
-        // flow is not yet proven safe to rewrite. Keep this anchor validation-only.
-        StoryAutoFlipFingerprint.method
+        StoryAutoFlipFingerprint.method.returnEarly()
     }
 }
