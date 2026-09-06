@@ -180,6 +180,7 @@ val downloadMediaPatch = bytecodePatch(
 
                     invoke-static {v1,v5,v2},${EXTENSION_CLASS}->customButtonOnClick(${OPTION_CLASS}Landroid/content/Context;Ljava/lang/Object;)Z
                     move-result v0
+                    if-eqz v0, :myinsta_original
                     return-void
                     """.trimIndent(),
                     ExternalLabel("myinsta_original", getInstruction(0)),
