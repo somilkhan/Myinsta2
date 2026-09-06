@@ -28,17 +28,11 @@ public final class FeedButton {
     }
 
     public static MediaOption$Option[] addToMenuOptionArray() {
-        try {
-            Method values = MediaOption$Option.class.getDeclaredMethod("$values");
-            values.setAccessible(true);
-            MediaOption$Option[] original = (MediaOption$Option[]) values.invoke(null);
-            MediaOption$Option[] result = new MediaOption$Option[original.length + 1];
-            System.arraycopy(original, 0, result, 0, original.length);
-            result[original.length] = downloadOverflowButton();
-            return result;
-        } catch (Throwable ignored) {
-            return new MediaOption$Option[]{downloadOverflowButton()};
-        }
+        MediaOption$Option[] original = MediaOption$Option.$values();
+        MediaOption$Option[] result = new MediaOption$Option[original.length + 1];
+        System.arraycopy(original, 0, result, 0, original.length);
+        result[original.length] = downloadOverflowButton();
+        return result;
     }
 
     public static void addFeedOverflowButton(Object buttonAdderObject, ArrayList<?> buttonList) {
