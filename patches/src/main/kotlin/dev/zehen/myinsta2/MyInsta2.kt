@@ -5,6 +5,7 @@ import dev.zehen.myinsta2.ads.hideAdsPatch
 import dev.zehen.myinsta2.ghostmode.antiRevokePatch
 import dev.zehen.myinsta2.ghostmode.ghostModePatch
 import dev.zehen.myinsta2.ghostmode.ghostModeTypingPatch
+import dev.zehen.myinsta2.ghostmode.viewLiveAnonymouslyPatch
 import dev.zehen.myinsta2.ghostmode.viewStoriesAnonymouslyPatch
 import dev.zehen.myinsta2.stories.disableVideoAutoplayPatch
 
@@ -19,6 +20,7 @@ val myInsta2Patch = bytecodePatch(
         ghostModePatch,
         ghostModeTypingPatch,
         viewStoriesAnonymouslyPatch,
+        viewLiveAnonymouslyPatch,
         antiRevokePatch,
         hideAdsPatch,
         disableVideoAutoplayPatch,
