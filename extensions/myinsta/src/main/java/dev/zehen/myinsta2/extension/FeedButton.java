@@ -9,6 +9,7 @@ import com.instagram.feed.media.mediaoption.MediaOption$Option;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -40,8 +41,18 @@ public final class FeedButton {
         }
     }
 
-    public static boolean isCustomButtonPressed(MediaOption$Option option) {
-        return option != null && OPTION_TAG.equals(readName(option));
+    public static void addFeedOverflowButton(Object buttonAdderObject, ArrayList<?> buttonList) {
+        try {
+            Class<?> creator = Class.forName("LX.ZiN");
+            Class<?> buttonType = Class.forName("LX.5xy");
+            Method normal = buttonType.getDeclaredMethod("valueOf", String.class);
+            Object normalButton = normal.invoke(null, "NORMAL");
+            Method add = creator.getDeclaredMethod("A00", buttonType, MediaOption$Option.class, creator, CharSequence.class, ArrayList.class, boolean.class);
+            add.setAccessible(true);
+            add.invoke(null, normalButton, downloadOverflowButton(), buttonAdderObject, "Download", buttonList, false);
+        } catch (Throwable ignored) {
+            // Menu construction must never crash Instagram.
+        }
     }
 
     public static boolean handleFeedButton(MediaOption$Option option, Object overflowHelper) {
@@ -49,12 +60,15 @@ public final class FeedButton {
         try {
             Object media = resolveMedia(overflowHelper);
             String url = findMediaUrl(media);
-            if (url == null) return true;
-            enqueue(url);
+            if (url != null) enqueue(url);
         } catch (Throwable ignored) {
             // Never break Instagram's overflow handler because the downloader failed.
         }
         return true;
+    }
+
+    public static boolean isCustomButtonPressed(MediaOption$Option option) {
+        return option != null && OPTION_TAG.equals(readName(option));
     }
 
     private static Object resolveMedia(Object helper) {
@@ -110,7 +124,6 @@ public final class FeedButton {
                 if (url != null) return url;
             } catch (Throwable ignored) {}
         }
-
         return chooseUrl(value.toString());
     }
 
@@ -125,9 +138,7 @@ public final class FeedButton {
             }
             String lower = url.toLowerCase();
             if (lower.contains("cdninstagram") || lower.contains("fbcdn")) return url;
-            if (fallback == null && (lower.contains("instagram") || lower.contains("\.mp4") || lower.contains("\.jpg") || lower.contains("\.jpeg") || lower.contains("\.png"))) {
-                fallback = url;
-            }
+            if (fallback == null && (lower.contains("instagram") || lower.contains(".mp4") || lower.contains(".jpg") || lower.contains(".jpeg") || lower.contains(".png"))) fallback = url;
         }
         return fallback;
     }
@@ -137,7 +148,6 @@ public final class FeedButton {
         if (context == null) return;
         DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         if (manager == null) return;
-
         String name = fileName(url);
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setTitle(name);
@@ -154,9 +164,7 @@ public final class FeedButton {
             Method method = thread.getDeclaredMethod("currentApplication");
             method.setAccessible(true);
             return (Context) method.invoke(null);
-        } catch (Throwable ignored) {
-            return null;
-        }
+        } catch (Throwable ignored) { return null; }
     }
 
     private static String fileName(String url) {
