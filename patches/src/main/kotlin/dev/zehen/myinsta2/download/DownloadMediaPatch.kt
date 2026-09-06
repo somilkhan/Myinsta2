@@ -10,6 +10,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
@@ -45,10 +46,6 @@ val downloadMediaPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // 1) Add a real static field to Instagram's MediaOption$Option class and
-        // initialize it from our runtime extension. This follows the proven
-        // Morphe/Piko enum-extension mechanism instead of reflectively creating
-        // an enum object at runtime.
         OptionEnumInitialiserFingerprint.apply {
             classDef.fields.add(
                 classDef.fields.first { it.type == OPTION_CLASS }.toMutable().also {
@@ -80,7 +77,6 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        // 2) Add the new option to the feed overflow menu.
         FeedMenuBuilderFingerprint.apply {
             method.apply {
                 var arrayListRegister = -1
@@ -94,7 +90,8 @@ val downloadMediaPatch = bytecodePatch(
                 } else {
                     val candidates = instructions.filter {
                         it.opcode == Opcode.NEW_INSTANCE &&
-                            it.getReference<TypeReference>()?.type == "Ljava/util/ArrayList;"
+                            (it as? ReferenceInstruction)?.reference is TypeReference &&
+                            ((it as ReferenceInstruction).reference as TypeReference).type == "Ljava/util/ArrayList;"
                     }
                     for (instruction in candidates) {
                         val index = instruction.location.index
@@ -122,7 +119,6 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        // 3) Consume the custom option before Instagram's normal click dispatch.
         FeedOverflowClickFingerprint.apply {
             method.apply {
                 addInstructionsWithLabels(
