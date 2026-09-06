@@ -2,12 +2,8 @@ package dev.zehen.myinsta2.download
 
 import app.morphe.patcher.Fingerprint
 
-/**
- * Exact Instagram 445 anchors derived from the supplied base.apk.
- * These anchors identify the integration points; the executable downloader
- * layer is kept separate until its extension/data dependencies are wired.
- */
-internal object MediaOptionsOverflowHelperFingerprint : Fingerprint(
+/** Exact Instagram 445 feed downloader anchors. */
+internal object FeedButtonOnClickFingerprint : Fingerprint(
     name = "A09",
     definingClass = "LX/Zxv;",
     parameters = listOf("Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"),
@@ -15,22 +11,12 @@ internal object MediaOptionsOverflowHelperFingerprint : Fingerprint(
     strings = listOf("MediaOptionsOverflowHelper"),
 )
 
-internal object ReelMoreOptionsFingerprint : Fingerprint(
-    name = "A08",
-    definingClass = "LX/9Tx;",
-    parameters = listOf(
-        "Landroid/view/View;", "LX/1Pg;", "LX/9PM;",
-        "Lcom/instagram/feed/media/Media;", "LX/9Tx;", "Z", "Z", "Z",
-    ),
+/** 445 overflow-menu builder entry point. */
+internal object FeedOverflowMenuBuilderFingerprint : Fingerprint(
+    name = "A02",
+    definingClass = "LX/ZiN;",
+    parameters = listOf("LX/ZiN;", "Ljava/util/ArrayList;"),
     returnType = "V",
-    strings = listOf("ClipsOrganicMediaItemViewMoreOptionsController"),
-)
-
-internal object DirectThreadMediaSaverModuleFingerprint : Fingerprint(
-    name = "getModuleName",
-    definingClass = "LX/Kj4;",
-    returnType = "Ljava/lang/String;",
-    strings = listOf("DirectThreadMediaSaver"),
 )
 
 internal object MediaOptionsOverflowMenuCreatorFingerprint : Fingerprint(
@@ -40,7 +26,13 @@ internal object MediaOptionsOverflowMenuCreatorFingerprint : Fingerprint(
     strings = listOf("MediaOptionsOverflowMenuCreator"),
 )
 
-/** `saveMessageMedia` is a target-side log/action label, not a stable method name. */
+internal object DirectThreadMediaSaverModuleFingerprint : Fingerprint(
+    name = "getModuleName",
+    definingClass = "LX/Kj4;",
+    returnType = "Ljava/lang/String;",
+    strings = listOf("DirectThreadMediaSaver"),
+)
+
 internal object DirectThreadSaveMessageMediaFingerprint : Fingerprint(
     strings = listOf("DirectThreadFragment.saveMessageMedia"),
 )
