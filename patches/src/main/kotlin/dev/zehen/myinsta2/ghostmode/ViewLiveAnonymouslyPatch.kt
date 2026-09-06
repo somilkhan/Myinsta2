@@ -1,41 +1,48 @@
 package dev.zehen.myinsta2.ghostmode
 
 import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.util.indexOfFirstInstruction
+import app.morphe.util.registersUsed
+import com.android.tools.smali.dexlib2.Opcode
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-/**
- * Verified 445 heartbeat request-builder anchor.
- *
- * The endpoint is built by LX/QyW;->A00 and that method returns LX/7pe;.
- * Returning void here would be invalid bytecode, so this patch remains an
- * explicit anchor until the request-dispatch boundary is mapped. It is not
- * bundled into MyInsta2 while it is only an anchor.
- */
-private object LiveHeartbeatFingerprint : Fingerprint(
-    definingClass = "LX/QyW;",
-    name = "A00",
-    returnType = "LX/7pe;",
-    parameters = listOf(
-        "Lcom/instagram/common/session/UserSession;",
-        "Ljava/lang/String;",
-        "Ljava/lang/String;",
-    ),
-    strings = listOf("/live/%s/heartbeat_and_get_viewer_count/"),
+/** Instagram 445 live-heartbeat network interception. */
+private object TigonServiceLayerStartRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/instagram/api/tigon/TigonServiceLayer;",
+    name = "startRequest",
 )
 
 @Suppress("unused")
 val viewLiveAnonymouslyPatch = bytecodePatch(
-    name = "Ghost Mode — view live anonymously (anchor)",
-    description = "Verified 445 live-heartbeat request builder anchor; dispatch hook is not yet bundled.",
-    default = false,
+    name = "View Live Anonymously",
+    description = "Blocks Instagram's live viewer-count heartbeat request on Instagram 445.",
+    default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // Deliberately no-op: this method returns LX/7pe;, so an injected
-        // return-void would corrupt the patched APK. Keep the exact anchor
-        // available for the next request-dispatch mapping step.
-        LiveHeartbeatFingerprint.method
+        TigonServiceLayerStartRequestFingerprint.method.apply {
+            val firstIfEqzIndex = indexOfFirstInstruction(Opcode.IF_EQZ)
+            if (firstIfEqzIndex < 0) {
+                throw IllegalStateException("MyInsta2: Tigon startRequest URI guard not found")
+            }
+
+            val uriInstruction = instructions.lastOrNull {
+                it.opcode == Opcode.IGET_OBJECT && it.location.index < firstIfEqzIndex
+            } ?: throw IllegalStateException("MyInsta2: Tigon request URI field read not found")
+
+            val uriRegister = uriInstruction.registersUsed.firstOrNull()
+                ?: throw IllegalStateException("MyInsta2: Tigon request URI register not found")
+
+            addInstructions(
+                uriInstruction.location.index + 1,
+                """
+                invoke-static/range { v$uriRegister .. v$uriRegister }, Ldev/zehen/myinsta2/extension/Links;->interceptUri(Ljava/net/URI;)V
+                """.trimIndent(),
+            )
+        }
     }
 }
