@@ -7,20 +7,35 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-/** Exact 445 DirectThreadMediaSaver module-name anchor. */
-private object DirectThreadMediaSaverModuleNameFingerprint : Fingerprint(
+/** Exact Instagram 445 DirectThreadMediaSaver save/callback method. */
+private object DirectThreadMediaSaverSaveFingerprint : Fingerprint(
     definingClass = "LX/Kj4;",
-    name = "getModuleName",
-    returnType = "Ljava/lang/String;",
+    name = "A02",
+    returnType = "V",
+    parameters = listOf(
+        "LX/XKO;",
+        "LX/Nqq;",
+        "LX/Kj4;",
+        "Ljava/lang/String;",
+        "Ljava/util/List;",
+        "Ljava/util/concurrent/atomic/AtomicInteger;",
+        "Ljava/util/concurrent/atomic/AtomicInteger;",
+        "Ljava/util/concurrent/atomic/AtomicInteger;",
+        "Ljava/util/concurrent/atomic/AtomicInteger;",
+        "Ljava/util/concurrent/atomic/AtomicInteger;",
+        "I",
+        "Z",
+    ),
     strings = listOf("DirectThreadMediaSaver"),
 )
 
 /**
  * Instagram 445 direct-message media interception.
  *
- * Kept opt-in until a patched 445 runtime confirms the saver method's p1/p2
- * semantics. The target fingerprint itself is exact and is backed by the
- * uploaded 445 APK's LX/Kj4 + getModuleName + DirectThreadMediaSaver symbols.
+ * The hook targets the exact 445 A02 signature rather than selecting the
+ * first void method in the class. In A02, p3 is the DirectThreadMediaSaver
+ * instance (which owns the Activity field) and p2 is the message/media
+ * candidate passed into the save path.
  */
 @Suppress("unused")
 val directThreadMediaPatch = bytecodePatch(
@@ -31,21 +46,15 @@ val directThreadMediaPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        DirectThreadMediaSaverModuleNameFingerprint.apply {
+        DirectThreadMediaSaverSaveFingerprint.apply {
             val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
                 ?: throw IllegalStateException("MyInsta2: DirectThreadMediaSaver Activity field not found")
 
-            val saverMethod = classDef.methods.firstOrNull {
-                it.name != "<init>" &&
-                    it.returnType == "V" &&
-                    it.parameterTypes.size >= 2
-            } ?: throw IllegalStateException("MyInsta2: DirectThreadMediaSaver save method not found")
-
-            saverMethod.apply {
+            method.apply {
                 addInstructionsWithLabels(
                     0,
                     """
-                    iget-object v0, p1, $activityField
+                    iget-object v0, p3, $activityField
                     move-object v1, p2
                     invoke-static {v0,v1},Ldev/zehen/myinsta2/extension/MessageUtils;->messageDownloadCheck(Landroid/content/Context;Ljava/lang/Object;)Z
                     move-result v1
