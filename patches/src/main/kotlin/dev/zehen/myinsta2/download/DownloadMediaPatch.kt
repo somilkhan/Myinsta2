@@ -13,6 +13,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.AccessFlags
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
@@ -85,7 +86,7 @@ val downloadMediaPatch = bytecodePatch(
                     val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
                     reference.definingClass == OPTION_CLASS &&
                         reference.name == "\$values" &&
-                        reference.returnType == "[${OPTION_CLASS.removePrefix("L").removeSuffix(";")};"
+                        reference.returnType == "[${OPTION_CLASS}"
                 }
                 if (valuesIndex < 0) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values values builder not found")
@@ -159,7 +160,7 @@ val downloadMediaPatch = bytecodePatch(
                         (it.returnType.startsWith("L") || it.returnType.startsWith("[")) &&
                         it.parameterTypes.isEmpty() &&
                         it.implementation?.registerCount == 1 &&
-                        !it.isStatic
+                        (it.accessFlags and AccessFlags.STATIC.value) == 0
                 } ?: throw IllegalStateException("MyInsta2: instance object-returning feed media getter not found")
 
                 val getterDescriptor = "${getMediaObjectMethod.name}()${getMediaObjectMethod.returnType}"
