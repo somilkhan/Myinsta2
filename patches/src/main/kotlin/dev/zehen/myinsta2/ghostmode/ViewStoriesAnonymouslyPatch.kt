@@ -10,6 +10,11 @@ private object StorySeenRequestFingerprint : Fingerprint(
     definingClass = "LX/0hI;",
     name = "A06",
     returnType = "V",
+    parameters = listOf(
+        "Landroid/content/Context;",
+        "Ljava/lang/String;",
+        "Z",
+    ),
     strings = listOf("media/seen/?reel=%s&live_vod=0"),
 )
 
