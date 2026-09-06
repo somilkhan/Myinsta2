@@ -8,9 +8,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.indexOfFirstInstruction
-import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
@@ -66,9 +67,9 @@ val copyCommentPatch = bytecodePatch(
 
             val index = arrayListInit.location.index
             val commentFieldInstruction = getInstruction(index + 2)
-            val arrayRegister = arrayListInit.registersUsed.firstOrNull()
+            val arrayRegister = (arrayListInit as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action ArrayList register not found")
-            val commentRegister = commentFieldInstruction.registersUsed.getOrNull(1)
+            val commentRegister = (commentFieldInstruction as? TwoRegisterInstruction)?.registerB
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
 
             addInstructions(
@@ -88,7 +89,7 @@ val copyCommentPatch = bytecodePatch(
             val arrayListResult = instructions.lastOrNull {
                 it.location.index < firstIfEqzIndex && it.opcode == Opcode.MOVE_RESULT_OBJECT
             } ?: throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
-            val arrayListRegister = arrayListResult.registersUsed.firstOrNull()
+            val arrayListRegister = (arrayListResult as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action list register not found")
 
             addInstructionsWithLabels(
