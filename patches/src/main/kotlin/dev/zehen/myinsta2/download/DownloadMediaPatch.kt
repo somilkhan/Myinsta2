@@ -14,7 +14,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\\$Option;"
+private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/FeedButton;"
 
 private object OptionEnumInitialiserFingerprint : Fingerprint(
@@ -22,7 +22,6 @@ private object OptionEnumInitialiserFingerprint : Fingerprint(
     name = "<clinit>",
 )
 
-/** Instagram's post overflow menu builder. The text anchor is intentionally semantic. */
 private object FeedMenuBuilderFingerprint : Fingerprint(
     definingClass = "LX/C1T;",
     name = "A00",
@@ -30,7 +29,6 @@ private object FeedMenuBuilderFingerprint : Fingerprint(
     strings = listOf("TEXT_POST_APP_INACTIVE"),
 )
 
-/** Same semantic target used by Piko: overflow helper receiving MediaOption$Option. */
 private object FeedOverflowClickFingerprint : Fingerprint(
     definingClass = "LX/Zxv;",
     name = "A09",
@@ -48,16 +46,17 @@ val downloadMediaPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // Extend the real MediaOption$Option value array with our custom option.
         OptionEnumInitialiserFingerprint.apply {
+            val optionField = classDef.fields.firstOrNull { it.type == OPTION_CLASS }
+                ?: throw IllegalStateException("MyInsta2: MediaOption$Option backing field not found")
+
             classDef.fields.add(
-                classDef.fields.first { it.type == OPTION_CLASS }.toMutable().also {
-                    it.name = "MYINSTA_DOWNLOAD"
-                },
+                optionField.toMutable().also { it.name = "MYINSTA_DOWNLOAD" },
             )
 
             method.apply {
-                val lastInvokeDirectIndex = instructions.last { it.opcode == Opcode.INVOKE_DIRECT }.location.index
+                val lastInvokeDirectIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_DIRECT }?.location?.index
+                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option constructor call not found")
                 addInstructions(
                     lastInvokeDirectIndex + 2,
                     """
@@ -67,9 +66,11 @@ val downloadMediaPatch = bytecodePatch(
                     """.trimIndent(),
                 )
 
-                val lastInvokeStaticIndex = instructions.last { it.opcode == Opcode.INVOKE_STATIC }.location.index
+                val lastInvokeStaticIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_STATIC }?.location?.index
+                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option values builder not found")
                 val arrayInstructionIndex = lastInvokeStaticIndex - 1
-                val arrayRegister = getInstruction(arrayInstructionIndex).registersUsed[0]
+                val arrayRegister = getInstruction(arrayInstructionIndex).registersUsed.firstOrNull()
+                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option values array register not found")
                 addInstructions(
                     lastInvokeStaticIndex - 1,
                     """
@@ -80,8 +81,6 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        // Reuse Instagram's actual button-adder object and ArrayList rather than fabricating a
-        // menu implementation. This mirrors the proven Piko overflow-menu architecture.
         FeedMenuBuilderFingerprint.apply {
             method.apply {
                 var arrayListRegister = -1
@@ -89,9 +88,9 @@ val downloadMediaPatch = bytecodePatch(
                 var checkCastIndex = -1
 
                 if (getInstruction(0).opcode == Opcode.INVOKE_STATIC) {
-                    arrayListRegister = getInstruction(1).registersUsed[0]
+                    arrayListRegister = getInstruction(1).registersUsed.firstOrNull() ?: -1
                     checkCastIndex = instructions.indexOfFirst { it.opcode == Opcode.CHECK_CAST }
-                    if (checkCastIndex >= 0) checkCastRegister = getInstruction(checkCastIndex).registersUsed[0]
+                    if (checkCastIndex >= 0) checkCastRegister = getInstruction(checkCastIndex).registersUsed.firstOrNull() ?: -1
                 } else {
                     val candidates = instructions.filter {
                         it.opcode == Opcode.NEW_INSTANCE &&
@@ -103,9 +102,9 @@ val downloadMediaPatch = bytecodePatch(
                         if (index + 3 >= instructions.size) continue
                         if (getInstruction(index + 2).opcode == Opcode.IGET_OBJECT &&
                             getInstruction(index + 3).opcode == Opcode.CHECK_CAST) {
-                            arrayListRegister = getInstruction(index + 1).registersUsed[0]
+                            arrayListRegister = getInstruction(index + 1).registersUsed.firstOrNull() ?: -1
                             checkCastIndex = instructions.indexOf(getInstruction(index + 3))
-                            checkCastRegister = getInstruction(checkCastIndex).registersUsed[0]
+                            checkCastRegister = getInstruction(checkCastIndex).registersUsed.firstOrNull() ?: -1
                             break
                         }
                     }
@@ -124,8 +123,6 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        // Resolve the same media object that Instagram itself uses for the overflow handler.
-        // Do not attempt to discover media by reflecting over the overflow-helper internals.
         FeedOverflowClickFingerprint.apply {
             method.apply {
                 val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
@@ -134,8 +131,12 @@ val downloadMediaPatch = bytecodePatch(
                 val getMediaObjectMethod = classDef.methods.firstOrNull {
                     it.name != "<init>" &&
                         it.returnType != "V" &&
+                        (it.returnType.startsWith("L") || it.returnType.startsWith("[")) &&
+                        it.parameterTypes.isEmpty() &&
                         it.implementation?.registerCount == 1
-                } ?: throw IllegalStateException("MyInsta2: feed media getter not found")
+                } ?: throw IllegalStateException("MyInsta2: object-returning feed media getter not found")
+
+                val getterDescriptor = "${getMediaObjectMethod.name}()${getMediaObjectMethod.returnType}"
 
                 addInstructionsWithLabels(
                     0,
@@ -147,7 +148,7 @@ val downloadMediaPatch = bytecodePatch(
 
                     move-object/from16 v0, p0
                     iget-object v5, v0, $activityField
-                    invoke-virtual {v0},${getMediaObjectMethod.name}${getMediaObjectMethod.parameterTypes.joinToString("", prefix = "(", postfix = ")")}${getMediaObjectMethod.returnType}
+                    invoke-virtual {v0},${classDef.type}->${getterDescriptor}
                     move-result-object v2
 
                     invoke-static {v1,v5,v2},$EXTENSION_CLASS->customButtonOnClick($OPTION_CLASS Landroid/content/Context;Ljava/lang/Object;)Z
