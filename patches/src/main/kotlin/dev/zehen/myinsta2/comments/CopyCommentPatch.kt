@@ -7,7 +7,6 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
-import app.morphe.util.indexOfFirstInstruction
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -81,19 +80,25 @@ val copyCommentPatch = bytecodePatch(
         }
 
         CommentButtonOnClickFingerprint.method.apply {
-            val firstIfEqzIndex = indexOfFirstInstruction(Opcode.IF_EQZ)
+            val firstIfEqzIndex = instructions.indexOfFirst { it.opcode == Opcode.IF_EQZ }
             if (firstIfEqzIndex < 0) {
                 throw IllegalStateException("MyInsta2: exact 445 comment click guard not found")
             }
 
-            val arrayListResult = instructions.lastOrNull {
-                it.location.index < firstIfEqzIndex && it.opcode == Opcode.MOVE_RESULT_OBJECT
-            } ?: throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
-            val arrayListRegister = (arrayListResult as? OneRegisterInstruction)?.registerA
+            var arrayListResult: com.android.tools.smali.dexlib2.iface.instruction.Instruction? = null
+            for (i in 0 until firstIfEqzIndex) {
+                val instruction = instructions[i]
+                if (instruction.opcode == Opcode.MOVE_RESULT_OBJECT) {
+                    arrayListResult = instruction
+                }
+            }
+            val result = arrayListResult
+                ?: throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
+            val arrayListRegister = (result as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action list register not found")
 
             addInstructionsWithLabels(
-                arrayListResult.location.index + 1,
+                result.location.index + 1,
                 """
                 move-object/from16 v0, p1
                 invoke-static {v0,v$arrayListRegister},${EXTENSION_CLASS}->checkOnCommentButtonClick(Ljava/lang/Object;Ljava/util/List;)Z
@@ -101,7 +106,7 @@ val copyCommentPatch = bytecodePatch(
                 if-eqz v0, :myinsta_comment_original
                 return-void
                 """.trimIndent(),
-                ExternalLabel("myinsta_comment_original", getInstruction(arrayListResult.location.index + 1)),
+                ExternalLabel("myinsta_comment_original", getInstruction(result.location.index + 1)),
             )
         }
     }
