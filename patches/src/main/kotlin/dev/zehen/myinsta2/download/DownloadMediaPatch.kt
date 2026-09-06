@@ -9,15 +9,14 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.morphe.util.registersUsed
-import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/FeedButton;"
+private const val MEDIA_CLASS = "Lcom/instagram/feed/media/Media;"
 
 private object OptionEnumInitialiserFingerprint : Fingerprint(
     definingClass = OPTION_CLASS,
@@ -120,8 +119,7 @@ val downloadMediaPatch = bytecodePatch(
                 } else {
                     val candidates = instructions.filter {
                         it.opcode == Opcode.NEW_INSTANCE &&
-                            (it as? ReferenceInstruction)?.reference is TypeReference &&
-                            ((it as ReferenceInstruction).reference as TypeReference).type == "Ljava/util/ArrayList;"
+                            (it as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
                     }
                     for (instruction in candidates) {
                         val index = instruction.location.index
@@ -154,16 +152,18 @@ val downloadMediaPatch = bytecodePatch(
                 val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
                     ?: throw IllegalStateException("MyInsta2: feed overflow Activity field not found")
 
-                val getMediaObjectMethod = classDef.methods.firstOrNull {
-                    it.name != "<init>" &&
-                        it.returnType != "V" &&
-                        (it.returnType.startsWith("L") || it.returnType.startsWith("[")) &&
-                        it.parameterTypes.isEmpty() &&
-                        it.implementation?.registerCount == 1 &&
-                        (it.accessFlags and AccessFlags.STATIC.value) == 0
-                } ?: throw IllegalStateException("MyInsta2: instance object-returning feed media getter not found")
+                // Exact Instagram 445 getter: LX/Zxv;->A01(LX/Zxv;)Lcom/instagram/feed/media/Media;
+                // Bytecode shape: iget-object p0, p0, LX/Zxv;->A0V:LX/Jxt;;
+                // invoke-static {p0}, LX/ArH;->A0g(LX/Jxt;)Lcom/instagram/feed/media/Media;;
+                // move-result-object p0; return-object p0.
+                val getter = classDef.methods.firstOrNull {
+                    it.name == "A01" &&
+                        it.returnType == MEDIA_CLASS &&
+                        it.parameterTypes == listOf(classDef.type) &&
+                        it.implementation != null
+                } ?: throw IllegalStateException("MyInsta2: exact 445 feed media getter LX/Zxv;->A01 not found")
 
-                val getterDescriptor = "${getMediaObjectMethod.name}()${getMediaObjectMethod.returnType}"
+                val getterDescriptor = "${getter.name}(${classDef.type})${getter.returnType}"
 
                 addInstructionsWithLabels(
                     0,
@@ -175,7 +175,7 @@ val downloadMediaPatch = bytecodePatch(
 
                     move-object/from16 v0, p0
                     iget-object v5, v0, ${activityField}
-                    invoke-virtual {v0},${classDef.type}->${getterDescriptor}
+                    invoke-static {v0},${classDef.type}->${getterDescriptor}
                     move-result-object v2
 
                     invoke-static {v1,v5,v2},${EXTENSION_CLASS}->customButtonOnClick(${OPTION_CLASS}Landroid/content/Context;Ljava/lang/Object;)Z
