@@ -3,8 +3,6 @@ package dev.zehen.myinsta2.comments
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
-import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
-import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.Opcode
@@ -45,34 +43,44 @@ val copyCommentPatch = bytecodePatch(
 
     execute {
         AddCommentButtonFingerprint.method.apply {
-            val arrayListInit = instructions.firstOrNull { instruction ->
-                if (instruction.opcode != Opcode.NEW_INSTANCE) return@firstOrNull false
+            // Do not use Morphe's BytecodeUtilsKt instruction helpers here.
+            // Morphe Manager's stripped runtime does not ship that helper class.
+            val methodInstructions = implementation?.instructions?.toList()
+                ?: throw IllegalStateException("MyInsta2: comment action method has no implementation")
+
+            var arrayListIndex = -1
+            for (index in 0 until methodInstructions.size - 2) {
+                val instruction = methodInstructions[index]
+                if (instruction.opcode != Opcode.NEW_INSTANCE) continue
                 val reference = (instruction as? ReferenceInstruction)?.reference as? TypeReference
-                    ?: return@firstOrNull false
-                if (reference.type != "Ljava/util/ArrayList;") return@firstOrNull false
-
-                val index = instruction.location.index
-                if (index + 2 >= instructions.size) return@firstOrNull false
-                if (instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) return@firstOrNull false
-                val fieldInstruction = instructions[index + 2]
-                if (fieldInstruction.opcode != Opcode.IGET_OBJECT) return@firstOrNull false
+                    ?: continue
+                if (reference.type != "Ljava/util/ArrayList;") continue
+                if (methodInstructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
+                val fieldInstruction = methodInstructions[index + 2]
+                if (fieldInstruction.opcode != Opcode.IGET_OBJECT) continue
                 val fieldReference = (fieldInstruction as? ReferenceInstruction)?.reference as? FieldReference
-                    ?: return@firstOrNull false
-
-                fieldReference.definingClass == "LX/GEL;" &&
+                    ?: continue
+                if (fieldReference.definingClass == "LX/GEL;" &&
                     fieldReference.name == "A0C" &&
-                    fieldReference.type == "Lcom/instagram/user/model/User;"
-            } ?: throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
+                    fieldReference.type == "Lcom/instagram/user/model/User;") {
+                    arrayListIndex = index
+                    break
+                }
+            }
 
-            val index = arrayListInit.location.index
-            val commentFieldInstruction = getInstruction(index + 2)
+            if (arrayListIndex < 0) {
+                throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
+            }
+
+            val arrayListInit = methodInstructions[arrayListIndex]
+            val commentFieldInstruction = methodInstructions[arrayListIndex + 2]
             val arrayRegister = (arrayListInit as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action ArrayList register not found")
             val commentRegister = (commentFieldInstruction as? TwoRegisterInstruction)?.registerB
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
 
             addInstructions(
-                index + 3,
+                arrayListIndex + 3,
                 """
                 invoke-static {v$arrayRegister,v$commentRegister},${EXTENSION_CLASS}->addButton(Ljava/util/List;Ljava/lang/Object;)V
                 """.trimIndent(),
@@ -80,25 +88,36 @@ val copyCommentPatch = bytecodePatch(
         }
 
         CommentButtonOnClickFingerprint.method.apply {
-            val firstIfEqzIndex = instructions.indexOfFirst { it.opcode == Opcode.IF_EQZ }
+            val methodInstructions = implementation?.instructions?.toList()
+                ?: throw IllegalStateException("MyInsta2: comment click method has no implementation")
+
+            var firstIfEqzIndex = -1
+            for (index in methodInstructions.indices) {
+                if (methodInstructions[index].opcode == Opcode.IF_EQZ) {
+                    firstIfEqzIndex = index
+                    break
+                }
+            }
             if (firstIfEqzIndex < 0) {
                 throw IllegalStateException("MyInsta2: exact 445 comment click guard not found")
             }
 
-            var arrayListResult: com.android.tools.smali.dexlib2.iface.instruction.Instruction? = null
-            for (i in 0 until firstIfEqzIndex) {
-                val instruction = instructions[i]
-                if (instruction.opcode == Opcode.MOVE_RESULT_OBJECT) {
-                    arrayListResult = instruction
+            var arrayListResultIndex = -1
+            for (index in 0 until firstIfEqzIndex) {
+                if (methodInstructions[index].opcode == Opcode.MOVE_RESULT_OBJECT) {
+                    arrayListResultIndex = index
                 }
             }
-            val result = arrayListResult
-                ?: throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
+            if (arrayListResultIndex < 0) {
+                throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
+            }
+
+            val result = methodInstructions[arrayListResultIndex]
             val arrayListRegister = (result as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action list register not found")
 
             addInstructionsWithLabels(
-                result.location.index + 1,
+                arrayListResultIndex + 1,
                 """
                 move-object/from16 v0, p1
                 invoke-static {v0,v$arrayListRegister},${EXTENSION_CLASS}->checkOnCommentButtonClick(Ljava/lang/Object;Ljava/util/List;)Z
@@ -106,7 +125,7 @@ val copyCommentPatch = bytecodePatch(
                 if-eqz v0, :myinsta_comment_original
                 return-void
                 """.trimIndent(),
-                ExternalLabel("myinsta_comment_original", getInstruction(result.location.index + 1)),
+                ExternalLabel("myinsta_comment_original", methodInstructions[arrayListResultIndex + 1]),
             )
         }
     }
