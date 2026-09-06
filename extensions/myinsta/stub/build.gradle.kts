@@ -1,17 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
+    `java-library`
 }
 
-android {
-    namespace = "dev.zehen.myinsta2.extension.stub"
-    compileSdk = 36
+group = "dev.zehen.myinsta2.extension"
 
-    defaultConfig {
-        minSdk = 26
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
