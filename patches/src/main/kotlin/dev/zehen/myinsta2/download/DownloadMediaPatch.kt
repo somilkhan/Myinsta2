@@ -11,6 +11,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutab
 import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
@@ -37,6 +38,8 @@ private object FeedOverflowClickFingerprint : Fingerprint(
     strings = listOf("MediaOptionsOverflowHelper"),
 )
 
+private fun ReferenceInstruction.methodReference(): MethodReference? = reference as? MethodReference
+
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
     name = "Download media",
@@ -55,10 +58,21 @@ val downloadMediaPatch = bytecodePatch(
             )
 
             method.apply {
-                val lastInvokeDirectIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_DIRECT }?.location?.index
-                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor call not found")
+                val constructorIndex = instructions.indexOfLast { instruction ->
+                    if (instruction.opcode != Opcode.INVOKE_DIRECT) return@indexOfLast false
+                    val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
+                    reference.definingClass == OPTION_CLASS && reference.name == "<init>"
+                }
+                if (constructorIndex < 0) {
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor call not found")
+                }
+                if (constructorIndex + 1 >= instructions.size ||
+                    getInstruction(constructorIndex + 1).opcode != Opcode.SPUT_OBJECT
+                ) {
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor is not followed by enum field assignment")
+                }
                 addInstructions(
-                    lastInvokeDirectIndex + 2,
+                    constructorIndex + 2,
                     """
                     invoke-static {}, ${EXTENSION_CLASS}->downloadOverflowButton()${OPTION_CLASS}
                     move-result-object v0
@@ -66,15 +80,26 @@ val downloadMediaPatch = bytecodePatch(
                     """.trimIndent(),
                 )
 
-                val lastInvokeStaticIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_STATIC }?.location?.index
-                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} values builder not found")
-                val arrayInstructionIndex = lastInvokeStaticIndex - 1
-                val arrayRegister = getInstruction(arrayInstructionIndex).registersUsed.firstOrNull()
-                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} values array register not found")
+                val valuesIndex = instructions.indexOfLast { instruction ->
+                    if (instruction.opcode != Opcode.INVOKE_STATIC) return@indexOfLast false
+                    val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
+                    reference.definingClass == OPTION_CLASS &&
+                        reference.name == "\$values" &&
+                        reference.returnType == "[${OPTION_CLASS.removePrefix("L").removeSuffix(";")};"
+                }
+                if (valuesIndex < 0) {
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values values builder not found")
+                }
+                val moveResult = valuesIndex + 1
+                if (moveResult >= instructions.size || getInstruction(moveResult).opcode != Opcode.MOVE_RESULT_OBJECT) {
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values result register not found")
+                }
+                val arrayRegister = getInstruction(moveResult).registersUsed.firstOrNull()
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values result register unavailable")
                 addInstructions(
-                    lastInvokeStaticIndex - 1,
+                    valuesIndex,
                     """
-                    invoke-static {}, ${EXTENSION_CLASS}->addToMenuOptionArray()[${OPTION_CLASS}]
+                    invoke-static {}, ${EXTENSION_CLASS}->addToMenuOptionArray()[${OPTION_CLASS}
                     move-result-object v$arrayRegister
                     """.trimIndent(),
                 )
@@ -133,8 +158,9 @@ val downloadMediaPatch = bytecodePatch(
                         it.returnType != "V" &&
                         (it.returnType.startsWith("L") || it.returnType.startsWith("[")) &&
                         it.parameterTypes.isEmpty() &&
-                        it.implementation?.registerCount == 1
-                } ?: throw IllegalStateException("MyInsta2: object-returning feed media getter not found")
+                        it.implementation?.registerCount == 1 &&
+                        !it.isStatic
+                } ?: throw IllegalStateException("MyInsta2: instance object-returning feed media getter not found")
 
                 val getterDescriptor = "${getMediaObjectMethod.name}()${getMediaObjectMethod.returnType}"
 
