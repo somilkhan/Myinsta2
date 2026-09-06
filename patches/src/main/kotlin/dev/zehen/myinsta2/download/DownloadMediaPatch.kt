@@ -48,7 +48,7 @@ val downloadMediaPatch = bytecodePatch(
     execute {
         OptionEnumInitialiserFingerprint.apply {
             val optionField = classDef.fields.firstOrNull { it.type == OPTION_CLASS }
-                ?: throw IllegalStateException("MyInsta2: MediaOption$Option backing field not found")
+                ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} backing field not found")
 
             classDef.fields.add(
                 optionField.toMutable().also { it.name = "MYINSTA_DOWNLOAD" },
@@ -56,25 +56,25 @@ val downloadMediaPatch = bytecodePatch(
 
             method.apply {
                 val lastInvokeDirectIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_DIRECT }?.location?.index
-                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option constructor call not found")
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor call not found")
                 addInstructions(
                     lastInvokeDirectIndex + 2,
                     """
-                    invoke-static {}, $EXTENSION_CLASS->downloadOverflowButton()$OPTION_CLASS
+                    invoke-static {}, ${EXTENSION_CLASS}->downloadOverflowButton()${OPTION_CLASS}
                     move-result-object v0
-                    sput-object v0, $OPTION_CLASS->MYINSTA_DOWNLOAD:$OPTION_CLASS
+                    sput-object v0, ${OPTION_CLASS}->MYINSTA_DOWNLOAD:${OPTION_CLASS}
                     """.trimIndent(),
                 )
 
                 val lastInvokeStaticIndex = instructions.lastOrNull { it.opcode == Opcode.INVOKE_STATIC }?.location?.index
-                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option values builder not found")
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} values builder not found")
                 val arrayInstructionIndex = lastInvokeStaticIndex - 1
                 val arrayRegister = getInstruction(arrayInstructionIndex).registersUsed.firstOrNull()
-                    ?: throw IllegalStateException("MyInsta2: MediaOption$Option values array register not found")
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} values array register not found")
                 addInstructions(
                     lastInvokeStaticIndex - 1,
                     """
-                    invoke-static {}, $EXTENSION_CLASS->addToMenuOptionArray()[$OPTION_CLASS
+                    invoke-static {}, ${EXTENSION_CLASS}->addToMenuOptionArray()[${OPTION_CLASS}]
                     move-result-object v$arrayRegister
                     """.trimIndent(),
                 )
@@ -117,7 +117,7 @@ val downloadMediaPatch = bytecodePatch(
                 addInstructions(
                     checkCastIndex + 1,
                     """
-                    invoke-static {v$checkCastRegister,v$arrayListRegister},$EXTENSION_CLASS->addFeedOverflowButton(Ljava/lang/Object;Ljava/util/ArrayList;)V
+                    invoke-static {v$checkCastRegister,v$arrayListRegister},${EXTENSION_CLASS}->addFeedOverflowButton(Ljava/lang/Object;Ljava/util/ArrayList;)V
                     """.trimIndent(),
                 )
             }
@@ -142,16 +142,16 @@ val downloadMediaPatch = bytecodePatch(
                     0,
                     """
                     move-object/from16 v1, p1
-                    invoke-static {v1},$EXTENSION_CLASS->isCustomButtonPressed($OPTION_CLASS)Z
+                    invoke-static {v1},${EXTENSION_CLASS}->isCustomButtonPressed(${OPTION_CLASS})Z
                     move-result v0
                     if-eqz v0, :myinsta_original
 
                     move-object/from16 v0, p0
-                    iget-object v5, v0, $activityField
+                    iget-object v5, v0, ${activityField}
                     invoke-virtual {v0},${classDef.type}->${getterDescriptor}
                     move-result-object v2
 
-                    invoke-static {v1,v5,v2},$EXTENSION_CLASS->customButtonOnClick($OPTION_CLASS Landroid/content/Context;Ljava/lang/Object;)Z
+                    invoke-static {v1,v5,v2},${EXTENSION_CLASS}->customButtonOnClick(${OPTION_CLASS}Landroid/content/Context;Ljava/lang/Object;)Z
                     move-result v0
                     return-void
                     """.trimIndent(),
