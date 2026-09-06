@@ -15,7 +15,6 @@ enum class Feature(val key: String, val title: String) {
     ANTI_REVOKE("anti_revoke", "Anti Revoke"),
     HIDE_ADS("hide_ads", "Hide Ads"),
     DISABLE_VIDEO_AUTOPLAY("disable_video_autoplay", "Disable Video Autoplay"),
-    DOWNLOAD_MEDIA("download_media", "Download Media"),
 }
 
 internal val supportedFeatures = setOf(
@@ -25,5 +24,4 @@ internal val supportedFeatures = setOf(
     Feature.ANTI_REVOKE,
     Feature.HIDE_ADS,
     Feature.DISABLE_VIDEO_AUTOPLAY,
-    Feature.DOWNLOAD_MEDIA,
 )
