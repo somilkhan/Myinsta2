@@ -9,6 +9,7 @@ import com.instagram.feed.media.mediaoption.MediaOption$Option;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -37,26 +38,29 @@ public final class FeedButton {
 
     public static void addFeedOverflowButton(Object buttonAdderObject, ArrayList<?> buttonList) {
         try {
-            Class<?> creator = Class.forName("LX.ZiN");
+            Class<?> creator = buttonAdderObject.getClass();
             Class<?> buttonType = Class.forName("LX.5xy");
             Method normal = buttonType.getDeclaredMethod("valueOf", String.class);
             Object normalButton = normal.invoke(null, "NORMAL");
-            Method add = creator.getDeclaredMethod("A00", buttonType, MediaOption$Option.class, creator, CharSequence.class, ArrayList.class, boolean.class);
+            Method add = creator.getDeclaredMethod(
+                    "A00", buttonType, MediaOption$Option.class, creator,
+                    CharSequence.class, ArrayList.class, boolean.class);
             add.setAccessible(true);
-            add.invoke(null, normalButton, downloadOverflowButton(), buttonAdderObject, "Download", buttonList, false);
+            add.invoke(null, normalButton, downloadOverflowButton(), buttonAdderObject,
+                    "Download", buttonList, false);
         } catch (Throwable ignored) {
             // Menu construction must never crash Instagram.
         }
     }
 
-    public static boolean handleFeedButton(MediaOption$Option option, Object overflowHelper) {
+    /** Called only after the patch has resolved Instagram's actual feed media object. */
+    public static boolean customButtonOnClick(MediaOption$Option option, Context context, Object mediaObject) {
         if (!isCustomButtonPressed(option)) return false;
         try {
-            Object media = resolveMedia(overflowHelper);
-            String url = findMediaUrl(media);
-            if (url != null) enqueue(url);
+            String url = findMediaUrl(mediaObject);
+            if (url != null) enqueue(context, url);
         } catch (Throwable ignored) {
-            // Never break Instagram's overflow handler because the downloader failed.
+            // Downloader failure must never break the overflow handler.
         }
         return true;
     }
@@ -65,22 +69,10 @@ public final class FeedButton {
         return option != null && OPTION_TAG.equals(readName(option));
     }
 
-    private static Object resolveMedia(Object helper) {
-        if (helper == null) return null;
-        try {
-            Class<?> cls = Class.forName("LX.Zxv");
-            Method getter = cls.getDeclaredMethod("A00", cls);
-            getter.setAccessible(true);
-            return getter.invoke(null, helper);
-        } catch (Throwable ignored) {
-            return helper;
-        }
-    }
-
-    private static String readName(Object option) {
+    private static String readName(MediaOption$Option option) {
         try {
             for (Field field : option.getClass().getDeclaredFields()) {
-                if (field.getType() == String.class) {
+                if (field.getType() == String.class && !Modifier.isStatic(field.getModifiers())) {
                     field.setAccessible(true);
                     Object value = field.get(option);
                     if (value instanceof String) return (String) value;
@@ -97,7 +89,7 @@ public final class FeedButton {
     }
 
     private static String findUrl(Object value, int depth, Set<Object> visited) {
-        if (value == null || depth > 4) return null;
+        if (value == null || depth > 5) return null;
         if (value instanceof String) return chooseUrl((String) value);
         if (value.getClass().isPrimitive()) return null;
         if (!visited.add(value)) return null;
@@ -111,7 +103,7 @@ public final class FeedButton {
 
         Class<?> cls = value.getClass();
         for (Field field : cls.getDeclaredFields()) {
-            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+            if (Modifier.isStatic(field.getModifiers())) continue;
             try {
                 field.setAccessible(true);
                 String url = findUrl(field.get(value), depth + 1, visited);
@@ -132,13 +124,14 @@ public final class FeedButton {
             }
             String lower = url.toLowerCase();
             if (lower.contains("cdninstagram") || lower.contains("fbcdn")) return url;
-            if (fallback == null && (lower.contains("instagram") || lower.contains(".mp4") || lower.contains(".jpg") || lower.contains(".jpeg") || lower.contains(".png"))) fallback = url;
+            if (fallback == null && (lower.contains("instagram") || lower.contains(".mp4") || lower.contains(".jpg") || lower.contains(".jpeg") || lower.contains(".png"))) {
+                fallback = url;
+            }
         }
         return fallback;
     }
 
-    private static void enqueue(String url) {
-        Context context = currentContext();
+    private static void enqueue(Context context, String url) {
         if (context == null) return;
         DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         if (manager == null) return;
@@ -150,15 +143,6 @@ public final class FeedButton {
         request.setAllowedOverMetered(true);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "MyInsta2/" + name);
         manager.enqueue(request);
-    }
-
-    private static Context currentContext() {
-        try {
-            Class<?> thread = Class.forName("android.app.ActivityThread");
-            Method method = thread.getDeclaredMethod("currentApplication");
-            method.setAccessible(true);
-            return (Context) method.invoke(null);
-        } catch (Throwable ignored) { return null; }
     }
 
     private static String fileName(String url) {
