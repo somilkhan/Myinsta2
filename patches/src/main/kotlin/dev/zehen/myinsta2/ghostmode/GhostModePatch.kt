@@ -5,7 +5,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
+/** Exact Instagram 445 direct-message seen request method. */
 private object MarkThreadSeenFingerprint : Fingerprint(
+    definingClass = "LX/JmB;",
+    name = "A09",
     returnType = "V",
     parameters = listOf(
         "Lcom/instagram/common/session/UserSession;",
@@ -20,17 +23,12 @@ private object MarkThreadSeenFingerprint : Fingerprint(
 @Suppress("unused")
 val ghostModePatch = bytecodePatch(
     name = "Ghost Mode — DM seen",
-    description = "Blocks Instagram's direct-message seen event. Select this patch in Morphe to enable it.",
+    description = "Blocks Instagram's direct-message seen event on 445.",
     default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // Morphe patch selection is the feature toggle. Do not depend on an
-        // Instagram SharedPreferences key that the base APK does not define.
-        MarkThreadSeenFingerprint.method.addInstructions(
-            0,
-            "return-void",
-        )
+        MarkThreadSeenFingerprint.method.addInstructions(0, "return-void")
     }
 }
