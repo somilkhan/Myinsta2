@@ -28,15 +28,15 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        val method = StorySeenUriBuilderFingerprint.method
-        val returnInstruction = method.implementation!!.instructions
-            .indexOfFirst { it.opcode.name.startsWith("RETURN") }
-
-        require(returnInstruction >= 0) { "Instagram 445 story-seen builder has no return instruction" }
-
-        method.addInstructions(
-            returnInstruction,
-            "const/4 v0, 0x0",
+        // Exit immediately with false. Mutating v0 immediately before the
+        // original return was unsafe because the original method could write
+        // to v0 again between the injected instruction and RETURN.
+        StorySeenUriBuilderFingerprint.method.addInstructions(
+            0,
+            """
+            const/4 v0, 0x0
+            return v0
+            """.trimIndent(),
         )
     }
 }
