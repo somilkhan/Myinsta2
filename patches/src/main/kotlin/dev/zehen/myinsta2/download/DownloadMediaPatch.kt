@@ -1,43 +1,45 @@
 package dev.zehen.myinsta2.download
 
+import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
-import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.util.smali.ExternalLabel
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
- * Instagram 445 post/reel downloader.
+ * Safe 445 downloader integration boundary.
  *
- * The UI hook uses Instagram's existing overflow-menu builder and click path;
- * the runtime side deliberately reflects the Media object so obfuscated model
- * classes do not become compile-time dependencies.
+ * Instagram's 445 overflow implementation is heavily obfuscated and the
+ * available target evidence identifies the menu/helper classes, but does not
+ * yet prove a complete, type-safe dispatch path for injecting a new option.
+ * Keep the exact anchors available without emitting unverifiable calls into
+ * the target APK.
  */
+private object MediaOptionsOverflowHelperFingerprint : Fingerprint(
+    name = "A09",
+    definingClass = "LX/Zxv;",
+    parameters = listOf("Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"),
+    returnType = "V",
+    strings = listOf("MediaOptionsOverflowHelper"),
+)
+
+private object ReelMoreOptionsFingerprint : Fingerprint(
+    definingClass = "LX/9Tx;",
+    returnType = "V",
+    strings = listOf("ClipsOrganicMediaItemViewMoreOptionsController"),
+)
+
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
     name = "Download media",
-    description = "Adds a Download action to Instagram 445 post/reel overflow menus.",
-    default = true,
+    description = "445 media-download integration anchors; dispatch remains disabled until the exact menu callback is validated.",
+    default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        FeedOverflowMenuBuilderFingerprint.method.addInstructions(
-            0,
-            "invoke-static {p0, p1}, Ldev/zehen/myinsta2/download/DownloadRuntime;->addDownloadButton(Ljava/lang/Object;Ljava/util/ArrayList;)V",
-        )
-
-        FeedButtonOnClickFingerprint.method.addInstructionsWithLabels(
-            0,
-            """
-            invoke-static {p1}, Ldev/zehen/myinsta2/download/DownloadRuntime;->isDownloadOption(Ljava/lang/Object;)Z
-            move-result v0
-            if-eqz v0, :myinsta_original
-            invoke-static {p0}, Ldev/zehen/myinsta2/download/DownloadRuntime;->downloadCurrentMedia(Ljava/lang/Object;)V
-            return-void
-            """.trimIndent(),
-            ExternalLabel("myinsta_original", FeedButtonOnClickFingerprint.method.getInstruction(0)),
-        )
+        // Resolve the anchors during patching so target drift fails loudly,
+        // rather than silently producing a broken Instagram APK.
+        MediaOptionsOverflowHelperFingerprint.method
+        ReelMoreOptionsFingerprint.method
     }
 }
