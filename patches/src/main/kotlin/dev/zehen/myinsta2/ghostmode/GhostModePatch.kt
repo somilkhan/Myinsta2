@@ -20,6 +20,11 @@ private object MarkThreadSeenFingerprint : Fingerprint(
     strings = listOf("mark_thread_seen-"),
 )
 
+/**
+ * Ghost Mode DM-seen suppression. The fingerprint is deliberately exact: a
+ * broad string-only match can target a logging/telemetry helper instead of the
+ * request operation.
+ */
 @Suppress("unused")
 val ghostModePatch = bytecodePatch(
     name = "Ghost Mode — DM seen",
