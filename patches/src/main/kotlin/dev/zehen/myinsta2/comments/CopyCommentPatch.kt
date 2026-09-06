@@ -9,6 +9,9 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.indexOfFirstInstruction
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/CommentCopyUtils;"
@@ -43,36 +46,32 @@ val copyCommentPatch = bytecodePatch(
         AddCommentButtonFingerprint.method.apply {
             val arrayListInit = instructions.firstOrNull { instruction ->
                 if (instruction.opcode != Opcode.NEW_INSTANCE) return@firstOrNull false
-                val reference = instruction.reference?.toString() ?: return@firstOrNull false
-                if (reference != "Ljava/util/ArrayList;") return@firstOrNull false
-                val index = instruction.location.index
-                if (index + 5 >= instructions.size) return@firstOrNull false
-                instructions[index + 1].opcode == Opcode.INVOKE_DIRECT &&
-                    instructions[index + 2].opcode == Opcode.MOVE_RESULT_PSEUDO
-                    .not()
-            }
+                val reference = (instruction as? ReferenceInstruction)?.reference as? TypeReference
+                    ?: return@firstOrNull false
+                if (reference.type != "Ljava/util/ArrayList;") return@firstOrNull false
 
-            if (arrayListInit == null) {
-                throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
-            }
+                val index = instruction.location.index
+                if (index + 2 >= instructions.size) return@firstOrNull false
+                if (instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) return@firstOrNull false
+                val fieldInstruction = instructions[index + 2]
+                if (fieldInstruction.opcode != Opcode.IGET_OBJECT) return@firstOrNull false
+                val fieldReference = (fieldInstruction as? ReferenceInstruction)?.reference as? FieldReference
+                    ?: return@firstOrNull false
+
+                fieldReference.definingClass == "LX/GEL;" &&
+                    fieldReference.name == "A0C" &&
+                    fieldReference.type == "Lcom/instagram/user/model/User;"
+            } ?: throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
 
             val index = arrayListInit.location.index
-            val addObjectIndex = instructions.indexOfFirst { instruction ->
-                instruction.location.index > index + 1 &&
-                    instruction.opcode == Opcode.IGET_OBJECT &&
-                    instruction.location.index <= index + 8
-            }
-            if (addObjectIndex < 0) {
-                throw IllegalStateException("MyInsta2: exact 445 comment object field read not found")
-            }
-
+            val commentFieldInstruction = getInstruction(index + 2)
             val arrayRegister = arrayListInit.registersUsed.firstOrNull()
                 ?: throw IllegalStateException("MyInsta2: comment action ArrayList register not found")
-            val commentRegister = getInstruction(addObjectIndex).registersUsed.getOrNull(1)
+            val commentRegister = commentFieldInstruction.registersUsed.getOrNull(1)
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
 
             addInstruction(
-                addObjectIndex + 1,
+                index + 3,
                 """
                 invoke-static {v$arrayRegister,v$commentRegister},${EXTENSION_CLASS}->addButton(Ljava/util/List;Ljava/lang/Object;)V
                 """.trimIndent(),
