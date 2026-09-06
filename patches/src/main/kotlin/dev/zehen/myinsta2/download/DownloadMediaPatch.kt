@@ -9,11 +9,11 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.morphe.util.registersUsed
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
-import com.android.tools.smali.dexlib2.AccessFlags
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
@@ -89,14 +89,14 @@ val downloadMediaPatch = bytecodePatch(
                         reference.returnType == "[${OPTION_CLASS}"
                 }
                 if (valuesIndex < 0) {
-                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values values builder not found")
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values values builder not found")
                 }
                 val moveResult = valuesIndex + 1
                 if (moveResult >= instructions.size || getInstruction(moveResult).opcode != Opcode.MOVE_RESULT_OBJECT) {
-                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values result register not found")
+                    throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register not found")
                 }
                 val arrayRegister = getInstruction(moveResult).registersUsed.firstOrNull()
-                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} $values result register unavailable")
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register unavailable")
                 addInstructions(
                     valuesIndex,
                     """
