@@ -1,10 +1,11 @@
 package dev.zehen.myinsta2
 
 /**
- * MyInsta feature inventory.
+ * Verified Instagram 445 capability inventory.
  *
- * Keep this list capability-oriented: a capability is only promoted to a
- * verified patch after its target fingerprint and runtime behavior are tested.
+ * Only capabilities actually wired into the default bundle are advertised as
+ * supported. Experimental/unfinished features stay out of this set until a
+ * target fingerprint and end-to-end runtime behavior have been verified.
  */
 enum class Feature(val key: String, val title: String) {
     GHOST_MODE("ghost_mode", "Ghost Mode"),
@@ -12,19 +13,18 @@ enum class Feature(val key: String, val title: String) {
     ANTI_REVOKE("anti_revoke", "Anti Revoke"),
     HIDE_ADS("hide_ads", "Hide Ads"),
     DISABLE_STORY_AUTO_FLIPPING("disable_story_auto_flipping", "Disable Story Auto-Flipping"),
-    DISTRACTION_FREE("distraction_free", "Distraction Free"),
+    DISABLE_VIDEO_AUTOPLAY("disable_video_autoplay", "Disable Video Autoplay"),
     DOWNLOAD_POSTS("download_posts", "Download Posts"),
     DOWNLOAD_REELS("download_reels", "Download Reels"),
-    AVATAR_ZOOM("avatar_zoom", "Avatar Zoom"),
-    COPY_BIO("copy_bio", "Copy Bio"),
-    COPY_COMMENTS("copy_comments", "Copy Comments"),
-    COPY_MESSAGES("copy_messages", "Copy Messages"),
-    FOLLOWS_INDICATOR("follows_indicator", "Follows You Indicator"),
-    IMPROVE_MEDIA_QUALITY("improve_media_quality", "Improve Media Quality"),
-    INSTASMASH("instasmash", "Instasmash"),
-    EXPERIMENTS("experiments", "Experiment Tools"),
-    DEVELOPER_TOOLS("developer_tools", "Developer Tools"),
-    MONET_THEME("monet_theme", "Monet Theme"),
 }
 
-internal val supportedFeatures = Feature.entries.toSet()
+internal val supportedFeatures = setOf(
+    Feature.GHOST_MODE,
+    Feature.GHOST_MODE_TYPING,
+    Feature.ANTI_REVOKE,
+    Feature.HIDE_ADS,
+    Feature.DISABLE_STORY_AUTO_FLIPPING,
+    Feature.DISABLE_VIDEO_AUTOPLAY,
+    Feature.DOWNLOAD_POSTS,
+    Feature.DOWNLOAD_REELS,
+)
