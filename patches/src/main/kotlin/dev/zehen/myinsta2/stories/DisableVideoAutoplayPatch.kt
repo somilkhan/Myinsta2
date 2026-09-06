@@ -5,9 +5,12 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-/** Instagram's video-autoplay experiment predicate on 445. */
+/** Exact Instagram 445 video-autoplay preference predicate. */
 private object DisableVideoAutoplayFingerprint : Fingerprint(
+    definingClass = "LX/13A;",
+    name = "A00",
     returnType = "Z",
+    parameters = listOf("Lcom/instagram/common/session/UserSession;"),
     strings = listOf(
         "ig_olympus_disable_video_autoplay",
         "ig_disable_video_autoplay",
@@ -18,7 +21,7 @@ private object DisableVideoAutoplayFingerprint : Fingerprint(
 @Suppress("unused")
 val disableVideoAutoplayPatch = bytecodePatch(
     name = "Disable video autoplay",
-    description = "Disables Instagram video autoplay through the 445 video-setting predicate.",
+    description = "Forces the Instagram 445 video-autoplay preference predicate off.",
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
