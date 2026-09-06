@@ -9,19 +9,22 @@ These mappings were extracted from the supplied target APK's DEX files. They are
 | Ghost Mode — DM seen | `LX/JmB;` | `A09` | `(Lcom/instagram/common/session/UserSession;LX/1ew;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V`, string `mark_thread_seen-` |
 | Ghost Mode — story seen | `LX/0hI;` | `A06` | `(Landroid/content/Context;Ljava/lang/String;Z)V`, string `media/seen/?reel=%s&live_vod=0` |
 | Ghost Mode — typing | `LX/4tv;` | `A02` | `(... )Ljava/util/List;`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
-| Ghost Mode — live heartbeat builder | `LX/QyW;` | `A00` | `(Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;)LX/7pe;`, endpoint `/live/%s/heartbeat_and_get_viewer_count/`; dispatch boundary not yet mapped |
+| Ghost Mode — live heartbeat builder | `LX/QyW;` | `A00` | `(Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;)LX/7pe;`, endpoint `/live/%s/heartbeat_and_get_viewer_count/` |
+| Live heartbeat network boundary | `Lcom/instagram/api/tigon/TigonServiceLayer;` | `startRequest` | `(LX/3kv;LX/3kz;LX/3lr;)LX/8IW;`; URI is loaded into `v1` from `p1` immediately before `Ljava/net/URI;->getHost()` |
 | Anti-Revoke notification | `LX/72e;` | `A01` | `(Landroid/content/Intent;LX/2ej;)V`, string `revoke_notification` |
 | Hide Ads | `LX/4jB;` | `A02` | `(LX/4jB;LX/9il;LX/4oh;)Z`, string `Is ad pod` |
-| Download — feed overflow | `LX/Zxv;` | `A09` | `(Lcom/instagram/feed/media/mediaoption/MediaOption$Option;)V`, string `MediaOptionsOverflowHelper` |
-| Download — reel overflow | `LX/9Tx;` | `A08` | `(Landroid/view/View;LX/1Pg;LX/9PM;Lcom/instagram/feed/media/Media;LX/9Tx;ZZZ)V`, string `ClipsOrganicMediaItemViewMoreOptionsController` |
-| Download — DM saver module | `LX/Kj4;` | `getModuleName` | `()Ljava/lang/String;`, string `DirectThreadMediaSaver` |
-| Download — overflow menu class init | `LX/ZiN;` | `<clinit>` | `()V`, string `MediaOptionsOverflowMenuCreator` |
+| Download — feed overflow click | `LX/Zxv;` | `A09` | `(Lcom/instagram/feed/media/mediaoption/MediaOption$Option;)V`, string `MediaOptionsOverflowHelper` |
+| Download — DM saver | `LX/Kj4;` | `A02` | `(LX/XKO;LX/Nqq;LX/Kj4;Ljava/lang/String;Ljava/util/List;Ljava/util/concurrent/atomic/AtomicInteger;Ljava/util/concurrent/atomic/AtomicInteger;Ljava/util/concurrent/atomic/AtomicInteger;Ljava/util/concurrent/atomic/AtomicInteger;Ljava/util/concurrent/atomic/AtomicInteger;IZ)V` |
+| Download — DM saver anchor | `LX/Kj4;` | `getModuleName` | `()Ljava/lang/String;`, string `DirectThreadMediaSaver` |
+| Copy Comment — menu builder | `LX/FZO;` | `A09` | `(LX/LW1;LX/Fbx;Ljava/lang/String;Ljava/lang/String;ZZ)Ljava/util/ArrayList;`, string `instagram_share_comment_to_story_entrypoint_impression` |
+| Copy Comment — click handler | `LX/FZO;` | `A19` | `(LX/Vfc;)V`, strings `select_comment_screen_delete_comments_tap` + `comment_share_click` |
+| Copy Comment — comment model | `LX/GEL;` | field | `A0O:Ljava/lang/String;` is read immediately before the comment-click guard in `LX/FZO;->A19` |
 | Copy-text anchor | `LX/Kk3;` | `toString` | `()Ljava/lang/String;`, string `CopyText` |
 
 ## Story flipping status
 
-The previous generic `userSession` fingerprint is not treated as verified. The current 445 story-seen mapping above is separate from story auto-advance. The auto-flip control flow still needs a precise timer/advance boundary before it should be claimed as verified.
+The 445 target contains `auto_advance` references, including `ReelViewerFragment->A0k(Ljava/lang/Integer;)V`, but this method is currently treated as an analytics/exit-reason candidate rather than a proven auto-advance control boundary. No production hook is claimed until the actual advance/timer control flow is established.
 
 ## Downloader boundary
 
-The target contains the required downloader-related classes and anchors, but a working downloader needs the complete Morphe extension/data path: media extraction, variant selection, carousel handling, storage/download queue, menu injection, and DM media handling. String presence alone is not treated as implementation evidence.
+The feed downloader has exact 445 enum/menu/click anchors and a guarded runtime media resolver, but it remains opt-in until a patched 445 runtime validates media extraction and button dispatch. The DM downloader now targets the exact 445 `LX/Kj4;->A02(...)V` signature instead of selecting an arbitrary void method; it also remains opt-in pending runtime validation.
