@@ -7,7 +7,9 @@ These mappings were extracted from the supplied target APK's DEX files. They are
 | Feature / subsystem | Defining class | Method | Signature / evidence |
 |---|---|---|---|
 | Ghost Mode — DM seen | `LX/JmB;` | `A09` | `(Lcom/instagram/common/session/UserSession;LX/1ew;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V`, string `mark_thread_seen-` |
-| Ghost Mode — typing | `LX/5nq;` | `Geu` | `(LX/2mc;LX/Ovs;LX/ADU;)V`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
+| Ghost Mode — story seen | `LX/0hI;` | `A06` | `(Landroid/content/Context;Ljava/lang/String;Z)V`, string `media/seen/?reel=%s&live_vod=0` |
+| Ghost Mode — typing | `LX/4tv;` | `A02` | `(... )Ljava/util/List;`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
+| Ghost Mode — live heartbeat builder | `LX/QyW;` | `A00` | `(Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;)LX/7pe;`, endpoint `/live/%s/heartbeat_and_get_viewer_count/`; dispatch boundary not yet mapped |
 | Anti-Revoke notification | `LX/72e;` | `A01` | `(Landroid/content/Intent;LX/2ej;)V`, string `revoke_notification` |
 | Hide Ads | `LX/4jB;` | `A02` | `(LX/4jB;LX/9il;LX/4oh;)Z`, string `Is ad pod` |
 | Download — feed overflow | `LX/Zxv;` | `A09` | `(Lcom/instagram/feed/media/mediaoption/MediaOption$Option;)V`, string `MediaOptionsOverflowHelper` |
@@ -18,7 +20,7 @@ These mappings were extracted from the supplied target APK's DEX files. They are
 
 ## Story flipping status
 
-The old/reference `userSession` fingerprint does **not** currently identify a matching method in the 445 `ReelViewerFragment`. The 445 class does contain story-viewer methods and an `auto_advance` telemetry value, but that alone is not sufficient to identify the automatic-flip control flow. The story-flipping hook therefore remains unverified until its actual timer/advance path is mapped.
+The previous generic `userSession` fingerprint is not treated as verified. The current 445 story-seen mapping above is separate from story auto-advance. The auto-flip control flow still needs a precise timer/advance boundary before it should be claimed as verified.
 
 ## Downloader boundary
 
