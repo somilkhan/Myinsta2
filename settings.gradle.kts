@@ -20,4 +20,10 @@ plugins {
     id("app.morphe.patches") version "1.3.4"
 }
 
+settings {
+    extensions {
+        defaultNamespace = "dev.zehen.myinsta2.extension"
+    }
+}
+
 include(":patches")
