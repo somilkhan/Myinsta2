@@ -32,10 +32,9 @@ private object DirectThreadMediaSaverSaveFingerprint : Fingerprint(
 /**
  * Instagram 445 direct-message media interception.
  *
- * The hook targets the exact 445 A02 signature rather than selecting the
- * first void method in the class. In A02, p3 is the DirectThreadMediaSaver
- * instance (which owns the Activity field) and p2 is the message/media
- * candidate passed into the save path.
+ * The hook targets the exact 445 A02 signature rather than selecting an
+ * arbitrary void method. In A02, p3 is the DirectThreadMediaSaver instance
+ * and p2 is the message/media candidate passed into the save path.
  */
 @Suppress("unused")
 val directThreadMediaPatch = bytecodePatch(
@@ -58,7 +57,7 @@ val directThreadMediaPatch = bytecodePatch(
                     move-object v1, p2
                     invoke-static {v0,v1},Ldev/zehen/myinsta2/extension/MessageUtils;->messageDownloadCheck(Landroid/content/Context;Ljava/lang/Object;)Z
                     move-result v1
-                    if-nez v1, :myinsta_dm_original
+                    if-eqz v1, :myinsta_dm_original
                     return-void
                     """.trimIndent(),
                     ExternalLabel("myinsta_dm_original", getInstruction(0)),
