@@ -15,17 +15,12 @@ public final class CopyTextButton extends LKA implements Vfc {
     private CopyTextButton() {
         super(
                 LKA.A00,
-                new LAb(R.drawable.ic_menu_copy),
+                new LAb(0x7f082230),
                 new LAc(R.string.copy),
                 new Function0<Object>() {
                     @Override
                     public Object invoke() {
                         return null;
-                    }
-
-                    @Override
-                    public int getArity() {
-                        return 0;
                     }
                 }
         );
