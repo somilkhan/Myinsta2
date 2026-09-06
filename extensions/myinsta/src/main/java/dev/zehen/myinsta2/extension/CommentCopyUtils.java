@@ -1,19 +1,17 @@
 package dev.zehen.myinsta2.extension;
 
-import android.app.ActivityThread;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.widget.Toast;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /** Runtime handler for the exact Instagram 445 comment-copy action. */
 @SuppressWarnings("unused")
 public final class CommentCopyUtils {
-    private static final String BUTTON_CLASS = "Ldev/zehen/myinsta2/extension/CopyTextButton;";
-
     private CommentCopyUtils() {}
 
     public static void addButton(List list, Object commentObject) {
@@ -63,7 +61,11 @@ public final class CommentCopyUtils {
 
     private static Context getApplicationContext() {
         try {
-            return ActivityThread.currentApplication().getApplicationContext();
+            Class<?> activityThread = Class.forName("android.app.ActivityThread");
+            Method currentApplication = activityThread.getDeclaredMethod("currentApplication");
+            currentApplication.setAccessible(true);
+            Object application = currentApplication.invoke(null);
+            return application instanceof Context ? ((Context) application).getApplicationContext() : null;
         } catch (Throwable ignored) {
             return null;
         }
