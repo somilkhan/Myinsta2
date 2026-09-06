@@ -14,7 +14,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
-private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
+private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\\$Option;"
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/FeedButton;"
 
 private object OptionEnumInitialiserFingerprint : Fingerprint(
@@ -22,6 +22,7 @@ private object OptionEnumInitialiserFingerprint : Fingerprint(
     name = "<clinit>",
 )
 
+/** Instagram's post overflow menu builder. The text anchor is intentionally semantic. */
 private object FeedMenuBuilderFingerprint : Fingerprint(
     definingClass = "LX/C1T;",
     name = "A00",
@@ -29,6 +30,7 @@ private object FeedMenuBuilderFingerprint : Fingerprint(
     strings = listOf("TEXT_POST_APP_INACTIVE"),
 )
 
+/** Same semantic target used by Piko: overflow helper receiving MediaOption$Option. */
 private object FeedOverflowClickFingerprint : Fingerprint(
     definingClass = "LX/Zxv;",
     name = "A09",
@@ -40,12 +42,13 @@ private object FeedOverflowClickFingerprint : Fingerprint(
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
     name = "Download media",
-    description = "Adds a real Instagram 445 feed overflow download action using a bundled Morphe runtime extension.",
+    description = "Adds a feed overflow download action for Instagram 445.",
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
+        // Extend the real MediaOption$Option value array with our custom option.
         OptionEnumInitialiserFingerprint.apply {
             classDef.fields.add(
                 classDef.fields.first { it.type == OPTION_CLASS }.toMutable().also {
@@ -77,6 +80,8 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
+        // Reuse Instagram's actual button-adder object and ArrayList rather than fabricating a
+        // menu implementation. This mirrors the proven Piko overflow-menu architecture.
         FeedMenuBuilderFingerprint.apply {
             method.apply {
                 var arrayListRegister = -1
@@ -119,14 +124,34 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
+        // Resolve the same media object that Instagram itself uses for the overflow handler.
+        // Do not attempt to discover media by reflecting over the overflow-helper internals.
         FeedOverflowClickFingerprint.apply {
             method.apply {
+                val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
+                    ?: throw IllegalStateException("MyInsta2: feed overflow Activity field not found")
+
+                val getMediaObjectMethod = classDef.methods.firstOrNull {
+                    it.name != "<init>" &&
+                        it.returnType != "V" &&
+                        it.implementation?.registerCount == 1
+                } ?: throw IllegalStateException("MyInsta2: feed media getter not found")
+
                 addInstructionsWithLabels(
                     0,
                     """
-                    invoke-static {p1,p0},$EXTENSION_CLASS->handleFeedButton($OPTION_CLASS,Ljava/lang/Object;)Z
+                    move-object/from16 v1, p1
+                    invoke-static {v1},$EXTENSION_CLASS->isCustomButtonPressed($OPTION_CLASS)Z
                     move-result v0
                     if-eqz v0, :myinsta_original
+
+                    move-object/from16 v0, p0
+                    iget-object v5, v0, $activityField
+                    invoke-virtual {v0},${getMediaObjectMethod.name}${getMediaObjectMethod.parameterTypes.joinToString("", prefix = "(", postfix = ")")}${getMediaObjectMethod.returnType}
+                    move-result-object v2
+
+                    invoke-static {v1,v5,v2},$EXTENSION_CLASS->customButtonOnClick($OPTION_CLASS Landroid/content/Context;Ljava/lang/Object;)Z
+                    move-result v0
                     return-void
                     """.trimIndent(),
                     ExternalLabel("myinsta_original", getInstruction(0)),
