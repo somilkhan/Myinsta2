@@ -21,8 +21,8 @@ private object TigonServiceLayerStartRequestFingerprint : Fingerprint(
 @Suppress("unused")
 val viewLiveAnonymouslyPatch = bytecodePatch(
     name = "View Live Anonymously",
-    description = "Blocks Instagram's live viewer-count heartbeat request on Instagram 445.",
-    default = true,
+    description = "Blocks Instagram's live viewer-count heartbeat request on Instagram 445; opt-in until runtime validation.",
+    default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
 
