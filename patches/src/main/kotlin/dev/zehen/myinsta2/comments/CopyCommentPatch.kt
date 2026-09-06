@@ -1,7 +1,7 @@
 package dev.zehen.myinsta2.comments
 
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
@@ -70,7 +70,7 @@ val copyCommentPatch = bytecodePatch(
             val commentRegister = commentFieldInstruction.registersUsed.getOrNull(1)
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
 
-            addInstruction(
+            addInstructions(
                 index + 3,
                 """
                 invoke-static {v$arrayRegister,v$commentRegister},${EXTENSION_CLASS}->addButton(Ljava/util/List;Ljava/lang/Object;)V
