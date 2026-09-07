@@ -165,7 +165,12 @@ val downloadMediaPatch = bytecodePatch(
 
                 val optionClassRef = methodRef(EXTENSION_CLASS, "isCustomButtonPressed", listOf(OPTION_CLASS), "Z")
                 val clickRef = methodRef(EXTENSION_CLASS, "customButtonOnClick", listOf(OPTION_CLASS, "Landroid/content/Context;", "Ljava/lang/Object;"), "Z")
-                val getterRef = methodRef(getter.definingClass, getter.name, getter.parameterTypes, getter.returnType)
+                val getterRef = methodRef(
+                    getter.definingClass,
+                    getter.name,
+                    getter.parameterTypes.map(CharSequence::toString),
+                    getter.returnType.toString(),
+                )
                 val activityRef = ImmutableFieldReference(classDef.type, activityField.name, activityField.type)
 
                 implementation.addInstruction(0, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, p1))
