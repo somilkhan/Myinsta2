@@ -1,21 +1,24 @@
 package dev.zehen.myinsta2.comments
 
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction11x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/CommentCopyUtils;"
 
-/** Exact Instagram 445 comment-action menu builder. */
 private object AddCommentButtonFingerprint : Fingerprint(
     definingClass = "LX/FZO;",
     name = "A09",
@@ -24,7 +27,6 @@ private object AddCommentButtonFingerprint : Fingerprint(
     strings = listOf("instagram_share_comment_to_story_entrypoint_impression"),
 )
 
-/** Exact Instagram 445 comment-button click handler. */
 private object CommentButtonOnClickFingerprint : Fingerprint(
     definingClass = "LX/FZO;",
     name = "A19",
@@ -32,6 +34,9 @@ private object CommentButtonOnClickFingerprint : Fingerprint(
     parameters = listOf("LX/Vfc;"),
     strings = listOf("select_comment_screen_delete_comments_tap", "comment_share_click"),
 )
+
+private fun methodRef(name: String, parameters: List<String>, returnType: String) =
+    ImmutableMethodReference(EXTENSION_CLASS, name, parameters, returnType)
 
 @Suppress("unused")
 val copyCommentPatch = bytecodePatch(
@@ -43,90 +48,69 @@ val copyCommentPatch = bytecodePatch(
 
     execute {
         AddCommentButtonFingerprint.method.apply {
-            // Do not use Morphe's BytecodeUtilsKt instruction helpers here.
-            // Morphe Manager's stripped runtime does not ship that helper class.
-            val methodInstructions = implementation?.instructions?.toList()
-                ?: throw IllegalStateException("MyInsta2: comment action method has no implementation")
-
+            val implementation = implementation as? MutableMethodImplementation
+                ?: throw IllegalStateException("MyInsta2: comment action method has no mutable implementation")
+            val methodInstructions = implementation.instructions.toList()
             var arrayListIndex = -1
             for (index in 0 until methodInstructions.size - 2) {
-                val instruction = methodInstructions[index]
-                if (instruction.opcode != Opcode.NEW_INSTANCE) continue
-                val reference = (instruction as? ReferenceInstruction)?.reference as? TypeReference
-                    ?: continue
-                if (reference.type != "Ljava/util/ArrayList;") continue
+                if (methodInstructions[index].opcode != Opcode.NEW_INSTANCE) continue
+                val type = (methodInstructions[index] as? ReferenceInstruction)?.reference as? TypeReference ?: continue
+                if (type.type != "Ljava/util/ArrayList;") continue
                 if (methodInstructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
-                val fieldInstruction = methodInstructions[index + 2]
-                if (fieldInstruction.opcode != Opcode.IGET_OBJECT) continue
-                val fieldReference = (fieldInstruction as? ReferenceInstruction)?.reference as? FieldReference
-                    ?: continue
-                if (fieldReference.definingClass == "LX/GEL;" &&
-                    fieldReference.name == "A0C" &&
-                    fieldReference.type == "Lcom/instagram/user/model/User;") {
+                val field = (methodInstructions[index + 2] as? ReferenceInstruction)?.reference as? FieldReference ?: continue
+                if (methodInstructions[index + 2].opcode == Opcode.IGET_OBJECT &&
+                    field.definingClass == "LX/GEL;" && field.name == "A0C" &&
+                    field.type == "Lcom/instagram/user/model/User;") {
                     arrayListIndex = index
                     break
                 }
             }
-
-            if (arrayListIndex < 0) {
-                throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
-            }
-
-            val arrayListInit = methodInstructions[arrayListIndex]
-            val commentFieldInstruction = methodInstructions[arrayListIndex + 2]
-            val arrayRegister = (arrayListInit as? OneRegisterInstruction)?.registerA
+            if (arrayListIndex < 0) throw IllegalStateException("MyInsta2: exact 445 comment action ArrayList not found")
+            val arrayRegister = (methodInstructions[arrayListIndex] as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action ArrayList register not found")
-            val commentRegister = (commentFieldInstruction as? TwoRegisterInstruction)?.registerB
+            val commentRegister = (methodInstructions[arrayListIndex + 2] as? TwoRegisterInstruction)?.registerB
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
-
-            addInstructions(
+            implementation.addInstruction(
                 arrayListIndex + 3,
-                """
-                invoke-static {v$arrayRegister,v$commentRegister},${EXTENSION_CLASS}->addButton(Ljava/util/List;Ljava/lang/Object;)V
-                """.trimIndent(),
+                BuilderInstruction35c(
+                    Opcode.INVOKE_STATIC, 2, arrayRegister, commentRegister, 0, 0, 0,
+                    methodRef("addButton", listOf("Ljava/util/List;", "Ljava/lang/Object;"), "V"),
+                ),
             )
         }
 
         CommentButtonOnClickFingerprint.method.apply {
-            val methodInstructions = implementation?.instructions?.toList()
-                ?: throw IllegalStateException("MyInsta2: comment click method has no implementation")
-
-            var firstIfEqzIndex = -1
-            for (index in methodInstructions.indices) {
-                if (methodInstructions[index].opcode == Opcode.IF_EQZ) {
-                    firstIfEqzIndex = index
-                    break
-                }
-            }
-            if (firstIfEqzIndex < 0) {
-                throw IllegalStateException("MyInsta2: exact 445 comment click guard not found")
-            }
-
-            var arrayListResultIndex = -1
-            for (index in 0 until firstIfEqzIndex) {
-                if (methodInstructions[index].opcode == Opcode.MOVE_RESULT_OBJECT) {
-                    arrayListResultIndex = index
-                }
-            }
-            if (arrayListResultIndex < 0) {
-                throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
-            }
-
-            val result = methodInstructions[arrayListResultIndex]
-            val arrayListRegister = (result as? OneRegisterInstruction)?.registerA
+            val implementation = implementation as? MutableMethodImplementation
+                ?: throw IllegalStateException("MyInsta2: comment click method has no mutable implementation")
+            val methodInstructions = implementation.instructions.toList()
+            val firstIfEqzIndex = methodInstructions.indexOfFirst { it.opcode == Opcode.IF_EQZ }
+            if (firstIfEqzIndex < 0) throw IllegalStateException("MyInsta2: exact 445 comment click guard not found")
+            val resultIndex = methodInstructions.subList(0, firstIfEqzIndex)
+                .indexOfLast { it.opcode == Opcode.MOVE_RESULT_OBJECT }
+            if (resultIndex < 0) throw IllegalStateException("MyInsta2: exact 445 comment action list result not found")
+            val absoluteResultIndex = resultIndex
+            val arrayListRegister = (methodInstructions[absoluteResultIndex] as? OneRegisterInstruction)?.registerA
                 ?: throw IllegalStateException("MyInsta2: comment action list register not found")
-
-            addInstructionsWithLabels(
-                arrayListResultIndex + 1,
-                """
-                move-object/from16 v0, p1
-                invoke-static {v0,v$arrayListRegister},${EXTENSION_CLASS}->checkOnCommentButtonClick(Ljava/lang/Object;Ljava/util/List;)Z
-                move-result v0
-                if-eqz v0, :myinsta_comment_original
-                return-void
-                """.trimIndent(),
-                ExternalLabel("myinsta_comment_original", methodInstructions[arrayListResultIndex + 1]),
+            if (absoluteResultIndex + 1 >= methodInstructions.size) {
+                throw IllegalStateException("MyInsta2: comment click original target not found")
+            }
+            val originalLabel = implementation.newLabelForIndex(absoluteResultIndex + 1)
+            val parameterBase = implementation.registerCount - (method.parameterTypes.size + 1)
+            if (parameterBase < 0 || parameterBase + 1 >= implementation.registerCount) {
+                throw IllegalStateException("MyInsta2: invalid comment click parameter register layout")
+            }
+            val p1 = parameterBase + 1
+            val checkRef = methodRef("checkOnCommentButtonClick", listOf("Ljava/lang/Object;", "Ljava/util/List;"), "Z")
+            val instructions = listOf(
+                BuilderInstruction10x(Opcode.RETURN_VOID),
+                BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel),
+                BuilderInstruction11x(Opcode.MOVE_RESULT, 0),
+                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, arrayListRegister, 0, 0, 0, checkRef),
+                BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 0, p1),
             )
+            instructions.asReversed().forEachIndexed { offset, instruction ->
+                implementation.addInstruction(absoluteResultIndex + 1 + offset, instruction)
+            }
         }
     }
 }
