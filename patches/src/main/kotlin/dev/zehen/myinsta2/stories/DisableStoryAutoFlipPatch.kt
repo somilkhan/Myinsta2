@@ -2,16 +2,13 @@ package dev.zehen.myinsta2.stories
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.util.returnEarly
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 /**
  * Instagram 445 story-timeout callback.
  *
- * This is the same structural callback used by the established Morphe
- * implementation: Object parameter + void return + userSession string in
- * ReelViewerFragment. Returning before the timeout action prevents the
- * automatic transition while leaving manual story navigation intact.
+ * The patch uses raw smali insertion instead of Morphe's returnEarly()
+ * helper because stripped Morphe runtimes do not contain BytecodeUtilsKt.
  */
 private object StoryAutoFlipFingerprint : Fingerprint(
     definingClass = "Linstagram/features/stories/fragment/ReelViewerFragment;",
@@ -30,6 +27,9 @@ val disableStoryAutoFlipPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        StoryAutoFlipFingerprint.method.returnEarly()
+        StoryAutoFlipFingerprint.method.addInstructions(
+            0,
+            "return-void",
+        )
     }
 }
