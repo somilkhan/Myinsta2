@@ -63,14 +63,14 @@ val directThreadMediaPatch = bytecodePatch(
             )
 
             val instructions = listOf(
-                BuilderInstruction10x(Opcode.RETURN_VOID),
-                BuilderInstruction21t(Opcode.IF_EQZ, 1, originalLabel),
-                BuilderInstruction11x(Opcode.MOVE_RESULT, 1),
-                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0, checkRef),
-                BuilderInstruction22x(Opcode.MOVE_OBJECT, 1, p2),
                 BuilderInstruction22c(Opcode.IGET_OBJECT, 0, p0, activityRef),
+                BuilderInstruction22x(Opcode.MOVE_OBJECT, 1, p2),
+                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0, checkRef),
+                BuilderInstruction11x(Opcode.MOVE_RESULT, 1),
+                BuilderInstruction21t(Opcode.IF_EQZ, 1, originalLabel),
+                BuilderInstruction10x(Opcode.RETURN_VOID),
             )
-            instructions.asReversed().forEachIndexed { offset, instruction ->
+            instructions.forEachIndexed { offset, instruction ->
                 implementation.addInstruction(offset, instruction)
             }
         }
