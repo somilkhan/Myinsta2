@@ -102,13 +102,13 @@ val copyCommentPatch = bytecodePatch(
             val p1 = parameterBase + 1
             val checkRef = methodRef("checkOnCommentButtonClick", listOf("Ljava/lang/Object;", "Ljava/util/List;"), "Z")
             val instructions = listOf(
-                BuilderInstruction10x(Opcode.RETURN_VOID),
-                BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel),
-                BuilderInstruction11x(Opcode.MOVE_RESULT, 0),
-                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, arrayListRegister, 0, 0, 0, checkRef),
                 BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 0, p1),
+                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, arrayListRegister, 0, 0, 0, checkRef),
+                BuilderInstruction11x(Opcode.MOVE_RESULT, 0),
+                BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel),
+                BuilderInstruction10x(Opcode.RETURN_VOID),
             )
-            instructions.asReversed().forEachIndexed { offset, instruction ->
+            instructions.forEachIndexed { offset, instruction ->
                 implementation.addInstruction(absoluteResultIndex + 1 + offset, instruction)
             }
         }
