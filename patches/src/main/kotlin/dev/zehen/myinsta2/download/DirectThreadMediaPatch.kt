@@ -22,16 +22,14 @@ private object DirectThreadMediaSaverTaskFingerprint : Fingerprint(
         "Z",
         "Z",
     ),
-    strings = listOf("DirectThreadMediaSaver"),
 )
 
 /**
  * Instagram 445 direct-message media interception.
  *
- * A07 is the exact task-entry method that receives the resolved Media object
- * and subsequently constructs the saver task. Intercepting here avoids the
- * earlier A02 candidate, whose normal path only consumes the AtomicInteger
- * and list state before entering the task pipeline.
+ * The exact 445 task entry is identified by class, method name and full
+ * descriptor. The optional string anchor is intentionally omitted because
+ * obfuscated production builds may omit or relocate that constant.
  */
 @Suppress("unused")
 val directThreadMediaPatch = bytecodePatch(
