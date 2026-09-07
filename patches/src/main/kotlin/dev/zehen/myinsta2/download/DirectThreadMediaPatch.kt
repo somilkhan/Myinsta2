@@ -6,8 +6,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction11x
-import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22c
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22x
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReference
@@ -68,9 +68,8 @@ val directThreadMediaPatch = bytecodePatch(
                 BuilderInstruction11x(Opcode.MOVE_RESULT, 1),
                 BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0, checkRef),
                 BuilderInstruction22x(Opcode.MOVE_OBJECT, 1, p2),
-                BuilderInstruction21c(Opcode.IGET_OBJECT, 0, activityRef),
+                BuilderInstruction22c(Opcode.IGET_OBJECT, 0, p0, activityRef),
             )
-            // Insert in reverse so the final order is the same as the original smali hook.
             instructions.asReversed().forEachIndexed { offset, instruction ->
                 implementation.addInstruction(offset, instruction)
             }
