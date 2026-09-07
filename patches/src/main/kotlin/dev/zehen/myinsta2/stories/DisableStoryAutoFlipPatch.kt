@@ -3,12 +3,16 @@ package dev.zehen.myinsta2.stories
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.patch.bytecodePatch
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
+import org.jf.dexlib2.Opcode
+import org.jf.dexlib2.builder.MutableMethodImplementation
+import org.jf.dexlib2.builder.instruction.BuilderInstruction10x
 
 /**
  * Instagram 445 story-timeout callback.
  *
- * The patch uses raw smali insertion instead of Morphe's returnEarly()
- * helper because stripped Morphe runtimes do not contain BytecodeUtilsKt.
+ * Stripped Morphe runtimes do not contain BytecodeUtilsKt, so this patch must
+ * mutate the dexlib2 implementation directly instead of using addInstructions
+ * or other Morphe bytecode helper extensions.
  */
 private object StoryAutoFlipFingerprint : Fingerprint(
     definingClass = "Linstagram/features/stories/fragment/ReelViewerFragment;",
@@ -27,9 +31,13 @@ val disableStoryAutoFlipPatch = bytecodePatch(
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        StoryAutoFlipFingerprint.method.addInstructions(
+        val implementation = StoryAutoFlipFingerprint.method.implementation
+            as? MutableMethodImplementation
+            ?: error("Story auto-flip method does not expose a mutable dexlib2 implementation")
+
+        implementation.addInstruction(
             0,
-            "return-void",
+            BuilderInstruction10x(Opcode.RETURN_VOID),
         )
     }
 }
