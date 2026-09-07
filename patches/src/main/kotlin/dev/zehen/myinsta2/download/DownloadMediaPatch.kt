@@ -8,8 +8,8 @@ import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
-import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
@@ -39,6 +39,9 @@ private object FeedOverflowClickFingerprint : Fingerprint(
 )
 
 private fun ReferenceInstruction.methodReference(): MethodReference? = reference as? MethodReference
+
+private fun com.android.tools.smali.dexlib2.iface.instruction.Instruction.outputRegister(): Int? =
+    (this as? OneRegisterInstruction)?.registerA
 
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
@@ -94,7 +97,7 @@ val downloadMediaPatch = bytecodePatch(
                 if (moveResult >= instructions.size || getInstruction(moveResult).opcode != Opcode.MOVE_RESULT_OBJECT) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register not found")
                 }
-                val arrayRegister = getInstruction(moveResult).registersUsed.firstOrNull()
+                val arrayRegister = getInstruction(moveResult).outputRegister()
                     ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register unavailable")
                 addInstructions(
                     valuesIndex,
@@ -113,9 +116,9 @@ val downloadMediaPatch = bytecodePatch(
                 var checkCastIndex = -1
 
                 if (getInstruction(0).opcode == Opcode.INVOKE_STATIC) {
-                    arrayListRegister = getInstruction(1).registersUsed.firstOrNull() ?: -1
+                    arrayListRegister = getInstruction(1).outputRegister() ?: -1
                     checkCastIndex = instructions.indexOfFirst { it.opcode == Opcode.CHECK_CAST }
-                    if (checkCastIndex >= 0) checkCastRegister = getInstruction(checkCastIndex).registersUsed.firstOrNull() ?: -1
+                    if (checkCastIndex >= 0) checkCastRegister = getInstruction(checkCastIndex).outputRegister() ?: -1
                 } else {
                     val candidates = instructions.filter {
                         it.opcode == Opcode.NEW_INSTANCE &&
@@ -126,9 +129,9 @@ val downloadMediaPatch = bytecodePatch(
                         if (index + 3 >= instructions.size) continue
                         if (getInstruction(index + 2).opcode == Opcode.IGET_OBJECT &&
                             getInstruction(index + 3).opcode == Opcode.CHECK_CAST) {
-                            arrayListRegister = getInstruction(index + 1).registersUsed.firstOrNull() ?: -1
+                            arrayListRegister = getInstruction(index + 1).outputRegister() ?: -1
                             checkCastIndex = instructions.indexOf(getInstruction(index + 3))
-                            checkCastRegister = getInstruction(checkCastIndex).registersUsed.firstOrNull() ?: -1
+                            checkCastRegister = getInstruction(checkCastIndex).outputRegister() ?: -1
                             break
                         }
                     }
@@ -152,10 +155,6 @@ val downloadMediaPatch = bytecodePatch(
                 val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
                     ?: throw IllegalStateException("MyInsta2: feed overflow Activity field not found")
 
-                // Exact Instagram 445 getter: LX/Zxv;->A01(LX/Zxv;)Lcom/instagram/feed/media/Media;
-                // Bytecode shape: iget-object p0, p0, LX/Zxv;->A0V:LX/Jxt;;
-                // invoke-static {p0}, LX/ArH;->A0g(LX/Jxt;)Lcom/instagram/feed/media/Media;;
-                // move-result-object p0; return-object p0.
                 val getter = classDef.methods.firstOrNull {
                     it.name == "A01" &&
                         it.returnType == MEDIA_CLASS &&
