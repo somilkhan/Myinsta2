@@ -1,17 +1,23 @@
 package dev.zehen.myinsta2.download
 
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
-import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
-import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction11x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction12x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21t
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22c
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
 private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
@@ -43,6 +49,15 @@ private fun ReferenceInstruction.methodReference(): MethodReference? = reference
 private fun com.android.tools.smali.dexlib2.iface.instruction.Instruction.outputRegister(): Int? =
     (this as? OneRegisterInstruction)?.registerA
 
+private fun MutableMethodImplementation.requireMutableImplementation(): MutableMethodImplementation = this
+
+private fun methodRef(
+    definingClass: String,
+    name: String,
+    parameters: List<String>,
+    returnType: String,
+) = ImmutableMethodReference(definingClass, name, parameters, returnType)
+
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
     name = "Download media",
@@ -61,7 +76,10 @@ val downloadMediaPatch = bytecodePatch(
             )
 
             method.apply {
-                val constructorIndex = instructions.indexOfLast { instruction ->
+                val implementation = implementation as? MutableMethodImplementation
+                    ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} initializer is not mutable")
+
+                val constructorIndex = implementation.instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.INVOKE_DIRECT) return@indexOfLast false
                     val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
                     reference.definingClass == OPTION_CLASS && reference.name == "<init>"
@@ -69,21 +87,28 @@ val downloadMediaPatch = bytecodePatch(
                 if (constructorIndex < 0) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor call not found")
                 }
-                if (constructorIndex + 1 >= instructions.size ||
-                    getInstruction(constructorIndex + 1).opcode != Opcode.SPUT_OBJECT
+                if (constructorIndex + 1 >= implementation.instructions.size ||
+                    implementation.instructions[constructorIndex + 1].opcode != Opcode.SPUT_OBJECT
                 ) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor is not followed by enum field assignment")
                 }
-                addInstructions(
+
+                val optionFieldRef = ImmutableFieldReference(OPTION_CLASS, "MYINSTA_DOWNLOAD", OPTION_CLASS)
+                val downloadButtonRef = methodRef(EXTENSION_CLASS, "downloadOverflowButton", emptyList(), OPTION_CLASS)
+                implementation.addInstruction(
                     constructorIndex + 2,
-                    """
-                    invoke-static {}, ${EXTENSION_CLASS}->downloadOverflowButton()${OPTION_CLASS}
-                    move-result-object v0
-                    sput-object v0, ${OPTION_CLASS}->MYINSTA_DOWNLOAD:${OPTION_CLASS}
-                    """.trimIndent(),
+                    BuilderInstruction35c(Opcode.INVOKE_STATIC, 0, 0, 0, 0, 0, 0, downloadButtonRef),
+                )
+                implementation.addInstruction(
+                    constructorIndex + 3,
+                    BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+                )
+                implementation.addInstruction(
+                    constructorIndex + 4,
+                    BuilderInstruction21c(Opcode.SPUT_OBJECT, 0, optionFieldRef),
                 )
 
-                val valuesIndex = instructions.indexOfLast { instruction ->
+                val valuesIndex = implementation.instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.INVOKE_STATIC) return@indexOfLast false
                     val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
                     reference.definingClass == OPTION_CLASS &&
@@ -94,44 +119,51 @@ val downloadMediaPatch = bytecodePatch(
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values values builder not found")
                 }
                 val moveResult = valuesIndex + 1
-                if (moveResult >= instructions.size || getInstruction(moveResult).opcode != Opcode.MOVE_RESULT_OBJECT) {
+                if (moveResult >= implementation.instructions.size ||
+                    implementation.instructions[moveResult].opcode != Opcode.MOVE_RESULT_OBJECT
+                ) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register not found")
                 }
-                val arrayRegister = getInstruction(moveResult).outputRegister()
+                val arrayRegister = implementation.instructions[moveResult].outputRegister()
                     ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} \$values result register unavailable")
-                addInstructions(
+                val addArrayRef = methodRef(EXTENSION_CLASS, "addToMenuOptionArray", emptyList(), "[${OPTION_CLASS}")
+                implementation.addInstruction(
                     valuesIndex,
-                    """
-                    invoke-static {}, ${EXTENSION_CLASS}->addToMenuOptionArray()[${OPTION_CLASS}
-                    move-result-object v$arrayRegister
-                    """.trimIndent(),
+                    BuilderInstruction35c(Opcode.INVOKE_STATIC, 0, 0, 0, 0, 0, 0, addArrayRef),
+                )
+                implementation.addInstruction(
+                    valuesIndex + 1,
+                    BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, arrayRegister),
                 )
             }
         }
 
         FeedMenuBuilderFingerprint.apply {
             method.apply {
+                val implementation = implementation as? MutableMethodImplementation
+                    ?: throw IllegalStateException("MyInsta2: feed menu builder is not mutable")
                 var arrayListRegister = -1
                 var checkCastRegister = -1
                 var checkCastIndex = -1
 
-                if (getInstruction(0).opcode == Opcode.INVOKE_STATIC) {
-                    arrayListRegister = getInstruction(1).outputRegister() ?: -1
-                    checkCastIndex = instructions.indexOfFirst { it.opcode == Opcode.CHECK_CAST }
-                    if (checkCastIndex >= 0) checkCastRegister = getInstruction(checkCastIndex).outputRegister() ?: -1
+                if (implementation.instructions.firstOrNull()?.opcode == Opcode.INVOKE_STATIC) {
+                    arrayListRegister = implementation.instructions.getOrNull(1)?.outputRegister() ?: -1
+                    checkCastIndex = implementation.instructions.indexOfFirst { it.opcode == Opcode.CHECK_CAST }
+                    if (checkCastIndex >= 0) checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
                 } else {
-                    val candidates = instructions.filter {
+                    val candidates = implementation.instructions.filter {
                         it.opcode == Opcode.NEW_INSTANCE &&
                             (it as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
                     }
                     for (instruction in candidates) {
-                        val index = instruction.location.index
-                        if (index + 3 >= instructions.size) continue
-                        if (getInstruction(index + 2).opcode == Opcode.IGET_OBJECT &&
-                            getInstruction(index + 3).opcode == Opcode.CHECK_CAST) {
-                            arrayListRegister = getInstruction(index + 1).outputRegister() ?: -1
-                            checkCastIndex = instructions.indexOf(getInstruction(index + 3))
-                            checkCastRegister = getInstruction(checkCastIndex).outputRegister() ?: -1
+                        val index = implementation.instructions.indexOf(instruction)
+                        if (index + 3 >= implementation.instructions.size) continue
+                        if (implementation.instructions[index + 2].opcode == Opcode.IGET_OBJECT &&
+                            implementation.instructions[index + 3].opcode == Opcode.CHECK_CAST
+                        ) {
+                            arrayListRegister = implementation.instructions[index + 1].outputRegister() ?: -1
+                            checkCastIndex = index + 3
+                            checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
                             break
                         }
                     }
@@ -141,17 +173,32 @@ val downloadMediaPatch = bytecodePatch(
                     throw IllegalStateException("MyInsta2: could not locate feed overflow ArrayList registers")
                 }
 
-                addInstructions(
+                val addButtonRef = methodRef(
+                    EXTENSION_CLASS,
+                    "addFeedOverflowButton",
+                    listOf("Ljava/lang/Object;", "Ljava/util/ArrayList;"),
+                    "V",
+                )
+                implementation.addInstruction(
                     checkCastIndex + 1,
-                    """
-                    invoke-static {v$checkCastRegister,v$arrayListRegister},${EXTENSION_CLASS}->addFeedOverflowButton(Ljava/lang/Object;Ljava/util/ArrayList;)V
-                    """.trimIndent(),
+                    BuilderInstruction35c(
+                        Opcode.INVOKE_STATIC,
+                        2,
+                        checkCastRegister,
+                        arrayListRegister,
+                        0,
+                        0,
+                        0,
+                        addButtonRef,
+                    ),
                 )
             }
         }
 
         FeedOverflowClickFingerprint.apply {
             method.apply {
+                val implementation = implementation as? MutableMethodImplementation
+                    ?: throw IllegalStateException("MyInsta2: feed overflow click handler is not mutable")
                 val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
                     ?: throw IllegalStateException("MyInsta2: feed overflow Activity field not found")
 
@@ -162,28 +209,41 @@ val downloadMediaPatch = bytecodePatch(
                         it.implementation != null
                 } ?: throw IllegalStateException("MyInsta2: exact 445 feed media getter LX/Zxv;->A01 not found")
 
-                val getterDescriptor = "${getter.name}(${classDef.type})${getter.returnType}"
-
-                addInstructionsWithLabels(
-                    0,
-                    """
-                    move-object/from16 v1, p1
-                    invoke-static {v1},${EXTENSION_CLASS}->isCustomButtonPressed(${OPTION_CLASS})Z
-                    move-result v0
-                    if-eqz v0, :myinsta_original
-
-                    move-object/from16 v0, p0
-                    iget-object v5, v0, ${activityField}
-                    invoke-static {v0},${classDef.type}->${getterDescriptor}
-                    move-result-object v2
-
-                    invoke-static {v1,v5,v2},${EXTENSION_CLASS}->customButtonOnClick(${OPTION_CLASS}Landroid/content/Context;Ljava/lang/Object;)Z
-                    move-result v0
-                    if-eqz v0, :myinsta_original
-                    return-void
-                    """.trimIndent(),
-                    ExternalLabel("myinsta_original", getInstruction(0)),
+                val originalLabel = implementation.newLabelForIndex(0)
+                val optionParam = 1
+                val optionClassRef = methodRef(
+                    EXTENSION_CLASS,
+                    "isCustomButtonPressed",
+                    listOf(OPTION_CLASS),
+                    "Z",
                 )
+                val clickRef = methodRef(
+                    EXTENSION_CLASS,
+                    "customButtonOnClick",
+                    listOf(OPTION_CLASS, "Landroid/content/Context;", "Ljava/lang/Object;"),
+                    "Z",
+                )
+                val getterRef = methodRef(getter.definingClass, getter.name, getter.parameterTypes, getter.returnType)
+                val activityRef = ImmutableFieldReference(classDef.type, activityField.name, activityField.type)
+
+                implementation.addInstruction(0, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, optionParam))
+                implementation.addInstruction(
+                    1,
+                    BuilderInstruction35c(Opcode.INVOKE_STATIC, 1, 1, 0, 0, 0, 0, optionClassRef),
+                )
+                implementation.addInstruction(2, BuilderInstruction11x(Opcode.MOVE_RESULT, 0))
+                implementation.addInstruction(3, BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel))
+                implementation.addInstruction(4, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 0, 0))
+                implementation.addInstruction(5, BuilderInstruction22c(Opcode.IGET_OBJECT, 5, 0, activityRef))
+                implementation.addInstruction(6, BuilderInstruction35c(Opcode.INVOKE_STATIC, 1, 0, 0, 0, 0, 0, getterRef))
+                implementation.addInstruction(7, BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, 2))
+                implementation.addInstruction(
+                    8,
+                    BuilderInstruction35c(Opcode.INVOKE_STATIC, 3, 1, 5, 2, 0, 0, clickRef),
+                )
+                implementation.addInstruction(9, BuilderInstruction11x(Opcode.MOVE_RESULT, 0))
+                implementation.addInstruction(10, BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel))
+                implementation.addInstruction(11, BuilderInstruction10x(Opcode.RETURN_VOID))
             }
         }
     }
