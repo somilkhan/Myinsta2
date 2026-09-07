@@ -95,7 +95,7 @@ val copyCommentPatch = bytecodePatch(
                 throw IllegalStateException("MyInsta2: comment click original target not found")
             }
             val originalLabel = implementation.newLabelForIndex(absoluteResultIndex + 1)
-            val parameterBase = implementation.registerCount - (method.parameterTypes.size + 1)
+            val parameterBase = implementation.registerCount - 2
             if (parameterBase < 0 || parameterBase + 1 >= implementation.registerCount) {
                 throw IllegalStateException("MyInsta2: invalid comment click parameter register layout")
             }
