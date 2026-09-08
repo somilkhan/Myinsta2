@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/somilkhan/Myinsta2/compare/v1.0.1...v1.0.2) (2026-09-08)
+
+### 🐛 Bug Fixes
+
+* make CI builds authenticate to Morphe registry ([d7992fe](https://github.com/somilkhan/Myinsta2/commit/d7992fe180ce8c7002a2940aa2eb96a4899d4ded))
+* update bundle patcher compatibility ([ed8fc7d](https://github.com/somilkhan/Myinsta2/commit/ed8fc7d11d1b7de150a3279060fab45c2e30033f))
+
 ## [1.0.1](https://github.com/somilkhan/Myinsta2/compare/v1.0.0...v1.0.1) (2026-09-08)
 
 ### 🐛 Bug Fixes
