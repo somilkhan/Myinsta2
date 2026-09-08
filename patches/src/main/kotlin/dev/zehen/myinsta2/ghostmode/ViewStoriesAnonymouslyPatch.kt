@@ -18,13 +18,17 @@ private object StorySeenRequestFingerprint : Fingerprint(
 val viewStoriesAnonymouslyPatch = bytecodePatch(
     name = "Ghost Mode — view stories anonymously",
     description = "Prevents Instagram 445 from constructing the story-seen request.",
-    default = false,
+    // This patch is a dependency of the default MyInsta2 aggregate. Morphe
+    // executes dependencies unconditionally when their parent is executed, so
+    // false here would incorrectly imply that this feature is opt-in.
+    default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
     execute {
-        // A04's LX/7po; result is ignored by its current callers. Return null
-        // rather than emitting an invalid return-void into an object method.
+        // A04 returns LX/7po;. All current 445 call sites ignore that result,
+        // so a typed null return suppresses request construction without
+        // emitting an invalid return-void.
         StorySeenRequestFingerprint.method.addInstructions(
             0,
             "const/4 v0, 0x0\nreturn-object v0",
