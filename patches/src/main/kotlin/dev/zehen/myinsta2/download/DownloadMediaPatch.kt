@@ -28,9 +28,11 @@ private object OptionEnumInitialiserFingerprint : Fingerprint(
     name = "<clinit>",
 )
 
+/**
+ * Instagram 445 feed-menu builder. The previous class/method pair was tied to
+ * an older 445 build variant; keep the stable string anchor instead.
+ */
 private object FeedMenuBuilderFingerprint : Fingerprint(
-    definingClass = "LX/C1T;",
-    name = "A00",
     returnType = "V",
     strings = listOf("TEXT_POST_APP_INACTIVE"),
 )
