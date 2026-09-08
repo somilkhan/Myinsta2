@@ -1,3 +1,14 @@
+## [1.0.3](https://github.com/somilkhan/Myinsta2/compare/v1.0.2...v1.0.3) (2026-09-08)
+
+### 🐛 Bug Fixes
+
+* correct MPP manifest validation regex ([bcb082d](https://github.com/somilkhan/Myinsta2/commit/bcb082d40367fbfa4a56ad3f67ad35d9060ffa7f))
+* correct release MPP validation regex ([ca4b9fa](https://github.com/somilkhan/Myinsta2/commit/ca4b9fa7270121159abecb047381c05589715357))
+* release without gradle wrapper plugin ([2b262fa](https://github.com/somilkhan/Myinsta2/commit/2b262fa804bdc5a16fd98d1e7ac0019c33899635))
+* synchronize Gradle version during releases ([7c227c7](https://github.com/somilkhan/Myinsta2/commit/7c227c7fc37e5d4c5c78b66d1e7825323b14ee8a))
+* synchronize Gradle version during releases ([1d9d43e](https://github.com/somilkhan/Myinsta2/commit/1d9d43eeb87596e811b21e706d0b6ce94bef1d5a))
+* use provisioned Gradle executable in semantic release ([d39cad0](https://github.com/somilkhan/Myinsta2/commit/d39cad093ce13d9c29a62013fda0b4b5c34d1b47))
+
 ## [1.0.2](https://github.com/somilkhan/Myinsta2/compare/v1.0.1...v1.0.2) (2026-09-08)
 
 ### 🐛 Bug Fixes

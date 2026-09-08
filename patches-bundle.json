@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-08T23:18:14",
-  "description": "## [1.0.2](https://github.com/somilkhan/Myinsta2/compare/v1.0.1...v1.0.2) (2026-09-08)\n\n### 🐛 Bug Fixes\n\n* make CI builds authenticate to Morphe registry ([d7992fe](https://github.com/somilkhan/Myinsta2/commit/d7992fe180ce8c7002a2940aa2eb96a4899d4ded))\n* update bundle patcher compatibility ([ed8fc7d](https://github.com/somilkhan/Myinsta2/commit/ed8fc7d11d1b7de150a3279060fab45c2e30033f))",
-  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.0.2/patches-1.0.2.mpp",
+  "created_at": "2026-09-08T23:50:00",
+  "description": "## [1.0.3](https://github.com/somilkhan/Myinsta2/compare/v1.0.2...v1.0.3) (2026-09-08)\n\n### 🐛 Bug Fixes\n\n* correct MPP manifest validation regex ([bcb082d](https://github.com/somilkhan/Myinsta2/commit/bcb082d40367fbfa4a56ad3f67ad35d9060ffa7f))\n* correct release MPP validation regex ([ca4b9fa](https://github.com/somilkhan/Myinsta2/commit/ca4b9fa7270121159abecb047381c05589715357))\n* release without gradle wrapper plugin ([2b262fa](https://github.com/somilkhan/Myinsta2/commit/2b262fa804bdc5a16fd98d1e7ac0019c33899635))\n* synchronize Gradle version during releases ([7c227c7](https://github.com/somilkhan/Myinsta2/commit/7c227c7fc37e5d4c5c78b66d1e7825323b14ee8a))\n* synchronize Gradle version during releases ([1d9d43e](https://github.com/somilkhan/Myinsta2/commit/1d9d43eeb87596e811b21e706d0b6ce94bef1d5a))\n* use provisioned Gradle executable in semantic release ([d39cad0](https://github.com/somilkhan/Myinsta2/commit/d39cad093ce13d9c29a62013fda0b4b5c34d1b47))",
+  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.0.3/patches-1.0.3.mpp",
   "signature_download_url": "",
-  "version": "1.0.2"
+  "version": "1.0.3"
 }
