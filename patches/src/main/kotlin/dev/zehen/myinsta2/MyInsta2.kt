@@ -6,6 +6,8 @@ import dev.zehen.myinsta2.ghostmode.antiRevokePatch
 import dev.zehen.myinsta2.ghostmode.ghostModePatch
 import dev.zehen.myinsta2.ghostmode.ghostModeTypingPatch
 import dev.zehen.myinsta2.ghostmode.viewStoriesAnonymouslyPatch
+import dev.zehen.myinsta2.stories.disableStoryAutoFlipPatch
+import dev.zehen.myinsta2.stories.disableVideoAutoplayPatch
 
 /** MyInsta2 production feature bundle for Instagram 445. */
 @Suppress("unused")
@@ -14,13 +16,15 @@ val myInsta2Patch = bytecodePatch(
     description = "Validated MyInsta2 features for Instagram 445.",
     default = true,
 ) {
-    // Only 445 targets whose class/method signatures and surrounding call
-    // behavior have been verified against the supplied APK are aggregated.
+    // These targets have been matched against the supplied 445 APK and use
+    // return types/opcodes compatible with their actual method bodies.
     dependsOn(
         ghostModePatch,
         ghostModeTypingPatch,
         viewStoriesAnonymouslyPatch,
         antiRevokePatch,
         hideAdsPatch,
+        disableVideoAutoplayPatch,
+        disableStoryAutoFlipPatch,
     )
 }
