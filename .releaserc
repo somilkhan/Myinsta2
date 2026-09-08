@@ -38,7 +38,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i -E 's/^version = .*/version = ${nextRelease.version}/' gradle.properties && gradle generatePatchesList && jq '.version=\"${nextRelease.version}\"' patches-list.json > patches-list.json.tmp && mv patches-list.json.tmp patches-list.json && python3 .github/scripts/generate_patches_readme.py $GITHUB_REPOSITORY $GITHUB_REF_NAME patches-list.json README.md"
+        "prepareCmd": "gradle -Pversion=${nextRelease.version} generatePatchesList && jq '.version=\"${nextRelease.version}\"' patches-list.json > patches-list.json.tmp && mv patches-list.json.tmp patches-list.json && python3 .github/scripts/generate_patches_readme.py $GITHUB_REPOSITORY $GITHUB_REF_NAME patches-list.json README.md"
       }
     ],
     [
@@ -46,7 +46,6 @@
       {
         "assets": [
           "CHANGELOG.md",
-          "gradle.properties",
           "patches-bundle.json",
           "patches-list.json",
           "README.md"
