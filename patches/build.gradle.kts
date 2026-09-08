@@ -2,10 +2,10 @@ group = "dev.zehen.myinsta2"
 
 patches {
     about {
-        name = "myinsta2 by zehen"
-        description = "Instagram patches maintained for the myinsta2 project."
+        name = "MyInsta2"
+        description = "Instagram patches maintained for MyInsta2."
         source = "https://github.com/somilkhan/Myinsta2"
-        author = "zehen"
+        author = "Zehen"
         contact = "https://github.com/somilkhan/Myinsta2/issues"
         website = "https://github.com/somilkhan/Myinsta2"
         license = "GPLv3"
