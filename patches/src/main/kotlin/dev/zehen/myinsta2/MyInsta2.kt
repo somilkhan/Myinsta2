@@ -5,6 +5,7 @@ import dev.zehen.myinsta2.ads.hideAdsPatch
 import dev.zehen.myinsta2.ghostmode.antiRevokePatch
 import dev.zehen.myinsta2.ghostmode.ghostModePatch
 import dev.zehen.myinsta2.ghostmode.ghostModeTypingPatch
+import dev.zehen.myinsta2.ghostmode.viewStoriesAnonymouslyPatch
 
 /** MyInsta2 production feature bundle for Instagram 445. */
 @Suppress("unused")
@@ -13,12 +14,12 @@ val myInsta2Patch = bytecodePatch(
     description = "Validated MyInsta2 features for Instagram 445.",
     default = true,
 ) {
-    // Only fingerprints verified against the supplied 445 APK are promoted
-    // into the aggregate. Other implemented patches remain independently
-    // selectable until their target/runtime validation is complete.
+    // Only 445 targets whose class/method signatures and surrounding call
+    // behavior have been verified against the supplied APK are aggregated.
     dependsOn(
         ghostModePatch,
         ghostModeTypingPatch,
+        viewStoriesAnonymouslyPatch,
         antiRevokePatch,
         hideAdsPatch,
     )
