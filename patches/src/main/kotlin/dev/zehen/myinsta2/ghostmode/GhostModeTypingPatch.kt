@@ -31,7 +31,9 @@ private object TypingIndicatorRequestFingerprint : Fingerprint(
 val ghostModeTypingPatch = bytecodePatch(
     name = "Ghost Mode — typing status",
     description = "Prevents Instagram's typing-indicator request from being dispatched.",
-    default = false,
+    // This patch is a dependency of the default MyInsta2 aggregate; Morphe
+    // executes dependencies when the parent patch executes.
+    default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
@@ -40,9 +42,6 @@ val ghostModeTypingPatch = bytecodePatch(
             as? MutableMethodImplementation
             ?: error("Typing-indicator method does not expose a mutable dexlib2 implementation")
 
-        // Geu is a void request-dispatch boundary. Returning before the
-        // network operation is constructed is type-correct and avoids leaving
-        // partially initialized request state behind.
         implementation.addInstruction(
             0,
             BuilderInstruction10x(Opcode.RETURN_VOID),
