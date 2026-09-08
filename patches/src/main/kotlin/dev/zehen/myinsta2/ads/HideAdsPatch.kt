@@ -22,6 +22,8 @@ private object AdPodFingerprint : Fingerprint(
 val hideAdsPatch = bytecodePatch(
     name = "Hide Ads",
     description = "Suppresses the Instagram ad-pod predicate on the 445 target.",
+    // This patch is a dependency of the default MyInsta2 aggregate; Morphe
+    // executes dependencies when the parent patch executes.
     default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
