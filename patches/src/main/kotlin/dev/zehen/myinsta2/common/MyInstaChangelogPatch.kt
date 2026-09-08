@@ -7,9 +7,10 @@ import org.w3c.dom.Element
 
 private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
 private const val PROVIDER = "dev.zehen.myinsta2.extension.MyInstaChangelogProvider"
-private const val AUTHORITY = "dev.zehen.myinsta2.changelog"
+private const val PROVIDER_AUTHORITY = "dev.zehen.myinsta2.changelog"
+private const val SETTINGS_ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity"
 
-/** Adds the runtime provider used by the first-launch/update changelog UI. */
+/** Adds the runtime components used by the first-launch/update changelog and settings UI. */
 private val myInstaChangelogManifestPatch = resourcePatch {
     execute {
         document("AndroidManifest.xml").use { document ->
@@ -17,24 +18,45 @@ private val myInstaChangelogManifestPatch = resourcePatch {
                 ?: error("Instagram application node was not found")
 
             val providers = application.getElementsByTagName("provider")
+            var providerPresent = false
             for (index in 0 until providers.length) {
                 val existing = providers.item(index) as? Element ?: continue
-                if (existing.getAttributeNS(ANDROID_NS, "authorities") == AUTHORITY) return@use
+                if (existing.getAttributeNS(ANDROID_NS, "authorities") == PROVIDER_AUTHORITY) {
+                    providerPresent = true
+                    break
+                }
+            }
+            if (!providerPresent) {
+                val provider = document.createElement("provider")
+                provider.setAttributeNS(ANDROID_NS, "android:name", PROVIDER)
+                provider.setAttributeNS(ANDROID_NS, "android:authorities", PROVIDER_AUTHORITY)
+                provider.setAttributeNS(ANDROID_NS, "android:exported", "false")
+                application.appendChild(provider)
             }
 
-            val provider = document.createElement("provider")
-            provider.setAttributeNS(ANDROID_NS, "android:name", PROVIDER)
-            provider.setAttributeNS(ANDROID_NS, "android:authorities", AUTHORITY)
-            provider.setAttributeNS(ANDROID_NS, "android:exported", "false")
-            application.appendChild(provider)
+            val activities = application.getElementsByTagName("activity")
+            var activityPresent = false
+            for (index in 0 until activities.length) {
+                val existing = activities.item(index) as? Element ?: continue
+                if (existing.getAttributeNS(ANDROID_NS, "android:name") == SETTINGS_ACTIVITY) {
+                    activityPresent = true
+                    break
+                }
+            }
+            if (!activityPresent) {
+                val activity = document.createElement("activity")
+                activity.setAttributeNS(ANDROID_NS, "android:name", SETTINGS_ACTIVITY)
+                activity.setAttributeNS(ANDROID_NS, "android:exported", "false")
+                application.appendChild(activity)
+            }
         }
     }
 }
 
 @Suppress("unused")
 val myInstaChangelogPatch = bytecodePatch(
-    name = "MyInsta2 — Changelog",
-    description = "Shows the MyInsta2 changelog when the app is first opened and after an update.",
+    name = "MyInsta2 — Changelog + Settings",
+    description = "Shows the first-launch/update changelog and exposes the MyInsta profile long-press settings surface.",
     default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
