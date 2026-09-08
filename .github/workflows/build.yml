@@ -47,6 +47,43 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gradle buildAndroid --stacktrace
 
+      - name: Validate Morphe bundle contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bundles=(patches/build/libs/*.mpp)
+          if (( ${#bundles[@]} != 1 )); then
+            echo "Expected exactly one MPP bundle, found ${#bundles[@]}." >&2
+            printf '%s\n' "${bundles[@]}" >&2
+            exit 1
+          fi
+          bundle="${bundles[0]}"
+          echo "Bundle: $bundle"
+          sha256sum "$bundle"
+          unzip -tq "$bundle"
+
+          strings "$bundle" > "$RUNNER_TEMP/mpp-strings.txt"
+          if grep -nE 'FreeRegisterProviderKt|registersUsed|BytecodeUtilsKt|BytecodeUtils' "$RUNNER_TEMP/mpp-strings.txt"; then
+            echo 'Forbidden stripped-runtime helper leaked into the MPP bundle.' >&2
+            exit 1
+          fi
+
+          for patch_name in \
+            'MyInsta2' \
+            'Ghost Mode — DM seen' \
+            'Hide Ads' \
+            'Disable Story Auto-Flipping'; do
+            if ! grep -Fq "$patch_name" "$RUNNER_TEMP/mpp-strings.txt"; then
+              echo "Expected production patch missing from bundle: $patch_name" >&2
+              exit 1
+            fi
+          done
+
+          if grep -Fq 'Ghost Mode — view stories anonymously' "$RUNNER_TEMP/mpp-strings.txt"; then
+            echo 'Opt-in story-anonymity patch is present in the bundle, as expected.'
+          fi
+
       - name: Prepare stable bundle name
         if: github.event_name != 'pull_request'
         run: cp patches/build/libs/*.mpp myinsta2.mpp
