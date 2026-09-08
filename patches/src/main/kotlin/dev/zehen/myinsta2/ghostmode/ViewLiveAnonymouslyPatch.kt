@@ -4,9 +4,10 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 
@@ -30,8 +31,8 @@ val viewLiveAnonymouslyPatch = bytecodePatch(
         TigonServiceLayerStartRequestFingerprint.method.apply {
             val uriInstruction = instructions.firstOrNull { instruction ->
                 if (instruction.opcode != Opcode.IGET_OBJECT) return@firstOrNull false
-                val registers = instruction.registersUsed
-                if (registers.size < 2 || registers[0] != 1 || registers[1] != 13) return@firstOrNull false
+                val fieldRegisters = instruction as? TwoRegisterInstruction ?: return@firstOrNull false
+                if (fieldRegisters.registerA != 1 || fieldRegisters.registerB != 13) return@firstOrNull false
 
                 val nextIndex = instruction.location.index + 1
                 if (nextIndex >= instructions.size) return@firstOrNull false
@@ -40,18 +41,18 @@ val viewLiveAnonymouslyPatch = bytecodePatch(
 
                 val reference = (next as? ReferenceInstruction)?.reference as? MethodReference
                     ?: return@firstOrNull false
+                val invokeRegisters = next as? FiveRegisterInstruction ?: return@firstOrNull false
                 reference.definingClass == "Ljava/net/URI;" &&
                     reference.name == "getHost" &&
                     reference.returnType == "Ljava/lang/String;" &&
                     reference.parameterTypes.isEmpty() &&
-                    next.registersUsed.firstOrNull() == 1
+                    invokeRegisters.registerCount == 1 &&
+                    invokeRegisters.registerC == 1
             } ?: throw IllegalStateException("MyInsta2: exact 445 Tigon URI field read not found")
 
             addInstructions(
                 uriInstruction.location.index + 1,
-                """
-                invoke-static {v1}, Ldev/zehen/myinsta2/extension/Links;->interceptUri(Ljava/net/URI;)V
-                """.trimIndent(),
+                "invoke-static {v1}, Ldev/zehen/myinsta2/extension/Links;->interceptUri(Ljava/net/URI;)V",
             )
         }
     }
