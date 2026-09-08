@@ -11,6 +11,24 @@ Add this repository once as a **Remote Patch Source** in Morphe Manager:
 Morphe will read the generated `patches-bundle.json` and follow each versioned release automatically. New releases use semantic version tags and versioned `.mpp` assets, so you do **not** need to manually download the MPP after every update.
 
 <!-- PATCHES_START -->
+> **[v1.0.0](https://github.com/somilkhan/Myinsta2/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+
+| Patch | Description | Options |
+|---|---|---|
+| [Anti Revoke — notification](#anti-revoke-notification) | Suppresses Instagram's revoked-message notification action on 445. |  |
+| [Copy Comment](#copy-comment) | Adds a guarded Copy action to Instagram 445 comment actions. |  |
+| [Disable Story Auto-Flipping](#disable-story-auto-flipping) | Disable stories automatically flipping/skipping after the timeout. |  |
+| [Disable video autoplay](#disable-video-autoplay) | Forces the Instagram 445 video-autoplay preference predicate off. |  |
+| [Download Direct Messages](#download-direct-messages) | Adds a guarded media-download path to Instagram 445 direct-message media saving. |  |
+| [Download media](#download-media) | Adds a feed overflow download action for Instagram 445. |  |
+| [Ghost Mode — DM seen](#ghost-mode-dm-seen) | Blocks Instagram's direct-message seen event on 445. |  |
+| [Ghost Mode — typing status](#ghost-mode-typing-status) | Prevents Instagram's typing-indicator request from being dispatched. |  |
+| [Ghost Mode — view stories anonymously](#ghost-mode-view-stories-anonymously) | Prevents Instagram 445 from constructing the story-seen request. |  |
+| [Hide Ads](#hide-ads) | Suppresses the Instagram ad-pod predicate on the 445 target. |  |
+| [Hide suggested content](#hide-suggested-content) | Drops Instagram 445 suggested feed units by invalidating their FeedItem JSON type key. |  |
+| [MyInsta2](#myinsta2) | Validated MyInsta2 features for Instagram 445. |  |
+| [MyInsta2 — Changelog + Settings](#myinsta2-changelog-settings) | Shows the first-launch/update changelog and exposes the MyInsta profile long-press settings surface. |  |
+| [View Live Anonymously](#view-live-anonymously) | Blocks Instagram's live viewer-count heartbeat request on Instagram 445; opt-in until runtime validation. |  |
 <!-- PATCHES_END -->
 
 ## Target
