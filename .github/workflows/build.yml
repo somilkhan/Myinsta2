@@ -33,6 +33,15 @@ jobs:
           gradle-version: '9.3.1'
           cache-provider: basic
 
+      - name: Audit stripped-runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'FreeRegisterProviderKt|registersUsed|BytecodeUtilsKt|BytecodeUtils' patches/src/main/kotlin; then
+            echo 'Forbidden stripped-runtime helper dependency detected.' >&2
+            exit 1
+          fi
+
       - name: Build Morphe bundle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
