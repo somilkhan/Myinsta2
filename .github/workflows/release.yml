@@ -10,6 +10,10 @@ permissions:
   id-token: write
   attestations: write
 
+env:
+  GITHUB_ACTOR: ${{ github.actor }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   release:
     name: Release
@@ -45,6 +49,35 @@ jobs:
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate published release bundle
+        if: steps.release.outputs.new_release_published == 'true'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
+        run: |
+          set -euo pipefail
+          asset="patches-${RELEASE_VERSION}.mpp"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${RELEASE_VERSION}/${asset}"
+          tmp="${RUNNER_TEMP}/${asset}"
+          curl --fail --location --retry 3 --retry-all-errors --silent --show-error "$url" -o "$tmp"
+          test -s "$tmp"
+          unzip -tq "$tmp"
+          manifest="$(unzip -p "$tmp" META-INF/MANIFEST.MF)"
+          echo "$manifest"
+          grep -Fq "Version: ${RELEASE_VERSION}" <<<"$manifest" || {
+            echo "Published MPP manifest version does not match release ${RELEASE_VERSION}." >&2
+            exit 1
+          }
+          grep -Eq '^Patcher-Version: [0-9]+\\.[0-9]+\\.[0-9]+' <<<"$manifest" || {
+            echo 'Published MPP has no valid Patcher-Version.' >&2
+            exit 1
+          }
+          unzip -l "$tmp" | grep -Fq 'extensions/myinsta.mpe' || {
+            echo 'Published MPP is missing extensions/myinsta.mpe.' >&2
+            exit 1
+          }
+          echo "Published MPP validated: $url"
 
       - name: Attest
         if: steps.release.outputs.new_release_published == 'true'
