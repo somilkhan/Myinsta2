@@ -64,7 +64,7 @@ val directThreadMediaPatch = bytecodePatch(
 
             val instructions = listOf(
                 BuilderInstruction22c(Opcode.IGET_OBJECT, 0, p0, activityRef),
-                BuilderInstruction22x(Opcode.MOVE_OBJECT, 1, p2),
+                BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, p2),
                 BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0, checkRef),
                 BuilderInstruction11x(Opcode.MOVE_RESULT, 1),
                 BuilderInstruction21t(Opcode.IF_EQZ, 1, originalLabel),
