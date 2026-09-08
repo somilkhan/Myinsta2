@@ -91,7 +91,10 @@ jobs:
             'dev/zehen/myinsta2/extension/Block' \
             'dev/zehen/myinsta2/extension/FeedButton' \
             'dev/zehen/myinsta2/extension/CommentCopyUtils' \
-            'dev/zehen/myinsta2/extension/MessageUtils'; do
+            'dev/zehen/myinsta2/extension/MessageUtils' \
+            'dev/zehen/myinsta2/extension/MyInstaChangelogProvider' \
+            'dev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint' \
+            'dev/zehen/myinsta2/extension/MyInstaSettingsActivity'; do
             if ! grep -Fq "$class_fragment" "$RUNNER_TEMP/extension-strings.txt"; then
               echo "Expected runtime extension class missing from MPE: $class_fragment" >&2
               exit 1
