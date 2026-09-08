@@ -1,4 +1,4 @@
-# myinsta2 by zehen
+# MyInsta2
 
 Morphe patches for Instagram, maintained as a versioned patch set rather than a repackaged Instagram distribution.
 
@@ -18,6 +18,8 @@ The target is pinned deliberately. A patch is not considered compatible with ano
 The reference implementation is MyInsta v26.0, based on Instagram 364.0.0.35.86. The port is being rebuilt as native Morphe patches so the result can be applied to an untouched Instagram APK/APKM from Morphe Manager.
 
 Feature families include privacy controls, downloads, distraction controls, media utilities, copy helpers, profile/media viewing improvements, experiment tooling, and the MyInsta settings surface.
+
+The MyInsta2 first-launch/update surface shows the installed Instagram version dynamically, release changes, developer attribution, verified credits, and clickable Telegram/support contacts.
 
 ## Build
 
