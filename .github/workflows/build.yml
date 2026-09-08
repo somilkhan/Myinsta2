@@ -9,10 +9,15 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: morphe-build-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  GITHUB_ACTOR: ${{ github.actor }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -113,6 +118,17 @@ jobs:
           if grep -Fq 'ViewStoriesAnonymouslyPatchKt' "$RUNNER_TEMP/mpp-strings.txt"; then
             echo 'Opt-in story-anonymity patch is present in the bundle, as expected.'
           fi
+
+          manifest="$(unzip -p "$bundle" META-INF/MANIFEST.MF)"
+          echo "$manifest"
+          grep -Eq '^Version: [0-9]+\\.[0-9]+\\.[0-9]+' <<<"$manifest" || {
+            echo 'MPP manifest has no valid semantic Version.' >&2
+            exit 1
+          }
+          grep -Eq '^Patcher-Version: [0-9]+\\.[0-9]+\\.[0-9]+' <<<"$manifest" || {
+            echo 'MPP manifest has no valid Patcher-Version.' >&2
+            exit 1
+          }
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v6
