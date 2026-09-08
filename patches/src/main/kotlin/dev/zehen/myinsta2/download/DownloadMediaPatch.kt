@@ -52,48 +52,6 @@ private fun isArrayListNewInstance(instruction: com.android.tools.smali.dexlib2.
     instruction.opcode == Opcode.NEW_INSTANCE &&
         (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
 
-private fun findFeedMenuBuilderClass(): String {
-    // Instagram 445.0.0.45.83 no longer keeps TEXT_POST_APP_INACTIVE inside
-    // the same method that builds the feed overflow list. Do not fingerprint
-    // that string: it makes the patch fail before we can inspect the actual
-    // ArrayList/check-cast builder shape.
-    val candidates = classes.flatMap { classDef ->
-        classDef.methods.mapNotNull { method ->
-            val implementation = method.implementation ?: return@mapNotNull null
-            val instructions = implementation.instructions.toList()
-            if (method.returnType != "V") return@mapNotNull null
-
-            var score = 0
-            var hasBuilderShape = false
-            for (index in 0 until instructions.size - 3) {
-                if (!isArrayListNewInstance(instructions[index])) continue
-                if (instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
-                if (instructions[index + 2].opcode != Opcode.IGET_OBJECT) continue
-                if (instructions[index + 3].opcode != Opcode.CHECK_CAST) continue
-                hasBuilderShape = true
-                score = maxOf(score, 10)
-            }
-            if (!hasBuilderShape) return@mapNotNull null
-
-            // Prefer methods that still carry the old stable string somewhere
-            // in their implementation, but do not require it.
-            if (instructions.any { instruction ->
-                    (instruction as? ReferenceInstruction)?.reference?.toString() == "TEXT_POST_APP_INACTIVE"
-                }) score += 100
-
-            Triple(classDef.type, method, score)
-        }
-    }
-
-    val bestScore = candidates.maxOfOrNull { it.third }
-        ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method not found")
-    val best = candidates.filter { it.third == bestScore }
-    if (best.size != 1) {
-        throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder is ambiguous (${best.size} candidates)")
-    }
-    return best.single().first
-}
-
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
     name = "Download media",
@@ -147,15 +105,33 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        val feedMenuBuilderClass = findFeedMenuBuilderClass()
-        val feedMenuBuilder = classBy { it.type == feedMenuBuilderClass }?.classDef
-            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder class is not mutable")
-        val builderMethod = feedMenuBuilder.methods.firstOrNull { method ->
-            method.returnType == "V" && method.implementation?.instructions?.any { instruction ->
-                instruction.opcode == Opcode.NEW_INSTANCE &&
-                    (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
-            } == true
-        } ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method disappeared")
+        var feedMenuBuilderClass: String? = null
+        var feedMenuBuilderMethodName: String? = null
+        classDefForEach { candidateClass ->
+            if (feedMenuBuilderClass != null) return@classDefForEach
+            candidateClass.methods.forEach { candidateMethod ->
+                if (feedMenuBuilderClass != null || candidateMethod.returnType != "V") return@forEach
+                val instructions = candidateMethod.implementation?.instructions?.toList() ?: return@forEach
+                val hasBuilderShape = (0 until (instructions.size - 3).coerceAtLeast(0)).any { index ->
+                    isArrayListNewInstance(instructions[index]) &&
+                        instructions[index + 1].opcode == Opcode.INVOKE_DIRECT &&
+                        instructions[index + 2].opcode == Opcode.IGET_OBJECT &&
+                        instructions[index + 3].opcode == Opcode.CHECK_CAST
+                }
+                if (hasBuilderShape) {
+                    feedMenuBuilderClass = candidateClass.type
+                    feedMenuBuilderMethodName = candidateMethod.name
+                }
+            }
+        }
+
+        val builderClassType = feedMenuBuilderClass
+            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method not found")
+        val builderMethodName = feedMenuBuilderMethodName
+            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method name not found")
+        val builderClass = mutableClassDefBy(builderClassType)
+        val builderMethod = builderClass.methods.firstOrNull { it.name == builderMethodName && it.returnType == "V" }
+            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method disappeared")
 
         builderMethod.apply {
             val implementation = implementation as? MutableMethodImplementation
@@ -164,7 +140,7 @@ val downloadMediaPatch = bytecodePatch(
             var checkCastRegister = -1
             var checkCastIndex = -1
 
-            for (index in 0 until implementation.instructions.size - 3) {
+            for (index in 0 until (implementation.instructions.size - 3).coerceAtLeast(0)) {
                 if (!isArrayListNewInstance(implementation.instructions[index])) continue
                 if (implementation.instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
                 if (implementation.instructions[index + 2].opcode != Opcode.IGET_OBJECT) continue
