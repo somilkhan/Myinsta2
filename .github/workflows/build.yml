@@ -42,6 +42,17 @@ jobs:
             exit 1
           fi
 
+      - name: Audit runtime extension wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            if ! grep -Fq 'extendWith("extensions/myinsta.mpe")' "$file"; then
+              echo "Patch references a MyInsta2 runtime extension but does not attach extensions/myinsta.mpe: $file" >&2
+              exit 1
+            fi
+          done < <(grep -RIlz 'Ldev/zehen/myinsta2/extension/' patches/src/main/kotlin --include='*.kt')
+
       - name: Build Morphe bundle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,6 +79,24 @@ jobs:
             echo 'Forbidden stripped-runtime helper leaked into the MPP bundle.' >&2
             exit 1
           fi
+
+          if ! unzip -l "$bundle" | grep -Fq 'extensions/myinsta.mpe'; then
+            echo 'MyInsta2 runtime extension is missing from the MPP bundle.' >&2
+            exit 1
+          fi
+
+          unzip -p "$bundle" extensions/myinsta.mpe | strings > "$RUNNER_TEMP/extension-strings.txt"
+          for class_fragment in \
+            'dev/zehen/myinsta2/extension/Links' \
+            'dev/zehen/myinsta2/extension/Block' \
+            'dev/zehen/myinsta2/extension/FeedButton' \
+            'dev/zehen/myinsta2/extension/CommentCopyUtils' \
+            'dev/zehen/myinsta2/extension/MessageUtils'; do
+            if ! grep -Fq "$class_fragment" "$RUNNER_TEMP/extension-strings.txt"; then
+              echo "Expected runtime extension class missing from MPE: $class_fragment" >&2
+              exit 1
+            fi
+          done
 
           # Validate production classes by stable JVM class-name fragments rather
           # than Unicode patch display names, which are not reliable in `strings`.
