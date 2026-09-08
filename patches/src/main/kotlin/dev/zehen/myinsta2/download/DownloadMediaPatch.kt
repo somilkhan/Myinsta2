@@ -83,13 +83,10 @@ val downloadMediaPatch = bytecodePatch(
         OptionEnumInitialiserFingerprint.apply {
             val optionField = classDef.fields.firstOrNull { it.type == OPTION_CLASS }
                 ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} backing field not found")
-
             classDef.fields.add(optionField.toMutable().also { it.name = "MYINSTA_DOWNLOAD" })
-
             method.apply {
                 val implementation = implementation as? MutableMethodImplementation
                     ?: throw IllegalStateException("MyInsta2: ${OPTION_CLASS} initializer is not mutable")
-
                 val constructorIndex = implementation.instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.INVOKE_DIRECT) return@indexOfLast false
                     val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
@@ -99,13 +96,11 @@ val downloadMediaPatch = bytecodePatch(
                 if (constructorIndex + 1 >= implementation.instructions.size || implementation.instructions[constructorIndex + 1].opcode != Opcode.SPUT_OBJECT) {
                     throw IllegalStateException("MyInsta2: ${OPTION_CLASS} constructor is not followed by enum field assignment")
                 }
-
                 val optionFieldRef = ImmutableFieldReference(OPTION_CLASS, "MYINSTA_DOWNLOAD", OPTION_CLASS)
                 val downloadButtonRef = methodRef(EXTENSION_CLASS, "downloadOverflowButton", emptyList(), OPTION_CLASS)
                 implementation.addInstruction(constructorIndex + 2, BuilderInstruction35c(Opcode.INVOKE_STATIC, 0, 0, 0, 0, 0, 0, downloadButtonRef))
                 implementation.addInstruction(constructorIndex + 3, BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0))
                 implementation.addInstruction(constructorIndex + 4, BuilderInstruction21c(Opcode.SPUT_OBJECT, 0, optionFieldRef))
-
                 val valuesIndex = implementation.instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.INVOKE_STATIC) return@indexOfLast false
                     val reference = (instruction as? ReferenceInstruction)?.methodReference() ?: return@indexOfLast false
@@ -143,7 +138,6 @@ val downloadMediaPatch = bytecodePatch(
                 }
             }
         }
-
         val builderClassType = feedMenuBuilderClass
             ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method not found")
         val builderMethodName = feedMenuBuilderMethodName
@@ -151,14 +145,12 @@ val downloadMediaPatch = bytecodePatch(
         val builderClass = mutableClassDefBy(builderClassType)
         val builderMethod = builderClass.methods.firstOrNull { it.name == builderMethodName && it.returnType == "V" }
             ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method disappeared")
-
         builderMethod.apply {
             val implementation = implementation as? MutableMethodImplementation
                 ?: throw IllegalStateException("MyInsta2: feed menu builder is not mutable")
             var arrayListRegister = -1
             var checkCastRegister = -1
             var checkCastIndex = -1
-
             for (index in 0 until (implementation.instructions.size - 3).coerceAtLeast(0)) {
                 if (!isArrayListNewInstance(implementation.instructions[index])) continue
                 if (implementation.instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
@@ -169,29 +161,20 @@ val downloadMediaPatch = bytecodePatch(
                 checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
                 if (arrayListRegister >= 0 && checkCastRegister >= 0) break
             }
-
             if (arrayListRegister < 0 || checkCastRegister < 0 || checkCastIndex < 0) {
                 throw IllegalStateException("MyInsta2: could not locate feed overflow ArrayList registers")
             }
             if (arrayListRegister > 15 || checkCastRegister > 15) {
                 throw IllegalStateException("MyInsta2: feed overflow builder uses registers above v15; range invoke required")
             }
-
             val addButtonRef = methodRef(EXTENSION_CLASS, "addFeedOverflowButton", listOf("Ljava/lang/Object;", "Ljava/util/ArrayList;"), "V")
-            implementation.addInstruction(
-                checkCastIndex + 1,
-                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, checkCastRegister, arrayListRegister, 0, 0, 0, addButtonRef),
-            )
+            implementation.addInstruction(checkCastIndex + 1, BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, checkCastRegister, arrayListRegister, 0, 0, 0, addButtonRef))
         }
 
         FeedOverflowClickFingerprint.apply {
             method.apply {
                 val implementation = implementation as? MutableMethodImplementation
                     ?: throw IllegalStateException("MyInsta2: feed overflow click handler is not mutable")
-
-                // Do not assume LX/Zxv declares an Activity field itself. On 445 the
-                // field may be inherited or owned by another obfuscated class. Resolve
-                // the exact FieldReference from bytecode so the owner/name/type stay valid.
                 var activityAccess = findActivityFieldAccess(implementation)
                 var hierarchyClass = classDef
                 var hierarchyDepth = 0
@@ -208,30 +191,20 @@ val downloadMediaPatch = bytecodePatch(
                 val resolvedActivityAccess = activityAccess
                     ?: throw IllegalStateException("MyInsta2: feed overflow Activity field access not found in 445 click-handler hierarchy")
                 val activityField = resolvedActivityAccess.field
-
                 if (implementation.registerCount < 6) {
                     throw IllegalStateException("MyInsta2: feed overflow click handler has insufficient registers for Activity hook")
                 }
-
                 val getter = classDef.methods.firstOrNull {
                     it.name == "A01" && it.returnType == MEDIA_CLASS && it.parameterTypes == listOf(classDef.type) && it.implementation != null
                 } ?: throw IllegalStateException("MyInsta2: exact 445 feed media getter LX/Zxv;->A01 not found")
-
                 val parameterBase = implementation.registerCount - (method.parameterTypes.size + 1)
                 if (parameterBase < 0) throw IllegalStateException("MyInsta2: invalid feed overflow parameter register layout")
                 val p0 = parameterBase
                 val p1 = parameterBase + 1
                 val originalLabel = implementation.newLabelForIndex(0)
-
                 val optionClassRef = methodRef(EXTENSION_CLASS, "isCustomButtonPressed", listOf(OPTION_CLASS), "Z")
-                val clickRef = methodRef(EXTENSION_CLASS, "customButtonOnClick", listOf(OPTION_CLASS, ACTIVITY_CLASS, "Ljava/lang/Object;"), "Z")
-                val getterRef = methodRef(
-                    getter.definingClass,
-                    getter.name,
-                    getter.parameterTypes.map(CharSequence::toString),
-                    getter.returnType.toString(),
-                )
-
+                val clickRef = methodRef(EXTENSION_CLASS, "customButtonOnClick", listOf(OPTION_CLASS, "Landroid/content/Context;", "Ljava/lang/Object;"), "Z")
+                val getterRef = methodRef(getter.definingClass, getter.name, getter.parameterTypes.map(CharSequence::toString), getter.returnType.toString())
                 implementation.addInstruction(0, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, p1))
                 implementation.addInstruction(1, BuilderInstruction35c(Opcode.INVOKE_STATIC, 1, 1, 0, 0, 0, 0, optionClassRef))
                 implementation.addInstruction(2, BuilderInstruction11x(Opcode.MOVE_RESULT, 0))
