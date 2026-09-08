@@ -69,18 +69,20 @@ jobs:
             exit 1
           fi
 
-          for patch_name in \
-            'MyInsta2' \
-            'Ghost Mode — DM seen' \
-            'Hide Ads' \
-            'Disable Story Auto-Flipping'; do
-            if ! grep -Fq "$patch_name" "$RUNNER_TEMP/mpp-strings.txt"; then
-              echo "Expected production patch missing from bundle: $patch_name" >&2
+          # Validate production classes by stable JVM class-name fragments rather
+          # than Unicode patch display names, which are not reliable in `strings`.
+          for class_fragment in \
+            'MyInsta2Kt' \
+            'GhostModePatchKt' \
+            'HideAdsPatchKt' \
+            'DisableStoryAutoFlipPatchKt'; do
+            if ! grep -Fq "$class_fragment" "$RUNNER_TEMP/mpp-strings.txt"; then
+              echo "Expected production patch class missing from bundle: $class_fragment" >&2
               exit 1
             fi
           done
 
-          if grep -Fq 'Ghost Mode — view stories anonymously' "$RUNNER_TEMP/mpp-strings.txt"; then
+          if grep -Fq 'ViewStoriesAnonymouslyPatchKt' "$RUNNER_TEMP/mpp-strings.txt"; then
             echo 'Opt-in story-anonymity patch is present in the bundle, as expected.'
           fi
 
