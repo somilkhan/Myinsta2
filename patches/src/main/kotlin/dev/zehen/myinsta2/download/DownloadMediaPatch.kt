@@ -28,15 +28,6 @@ private object OptionEnumInitialiserFingerprint : Fingerprint(
     name = "<clinit>",
 )
 
-/**
- * Instagram 445 feed-menu builder. The previous class/method pair was tied to
- * an older 445 build variant; keep the stable string anchor instead.
- */
-private object FeedMenuBuilderFingerprint : Fingerprint(
-    returnType = "V",
-    strings = listOf("TEXT_POST_APP_INACTIVE"),
-)
-
 private object FeedOverflowClickFingerprint : Fingerprint(
     definingClass = "LX/Zxv;",
     name = "A09",
@@ -56,6 +47,52 @@ private fun methodRef(
     parameters: List<String>,
     returnType: String,
 ) = ImmutableMethodReference(definingClass, name, parameters, returnType)
+
+private fun isArrayListNewInstance(instruction: com.android.tools.smali.dexlib2.iface.instruction.Instruction): Boolean =
+    instruction.opcode == Opcode.NEW_INSTANCE &&
+        (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
+
+private fun findFeedMenuBuilderClass(): String {
+    // Instagram 445.0.0.45.83 no longer keeps TEXT_POST_APP_INACTIVE inside
+    // the same method that builds the feed overflow list. Do not fingerprint
+    // that string: it makes the patch fail before we can inspect the actual
+    // ArrayList/check-cast builder shape.
+    val candidates = classes.flatMap { classDef ->
+        classDef.methods.mapNotNull { method ->
+            val implementation = method.implementation ?: return@mapNotNull null
+            val instructions = implementation.instructions.toList()
+            if (method.returnType != "V") return@mapNotNull null
+
+            var score = 0
+            var hasBuilderShape = false
+            for (index in 0 until instructions.size - 3) {
+                if (!isArrayListNewInstance(instructions[index])) continue
+                if (instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
+                if (instructions[index + 2].opcode != Opcode.IGET_OBJECT) continue
+                if (instructions[index + 3].opcode != Opcode.CHECK_CAST) continue
+                hasBuilderShape = true
+                score = maxOf(score, 10)
+            }
+            if (!hasBuilderShape) return@mapNotNull null
+
+            // Prefer methods that still carry the old stable string somewhere
+            // in their implementation, but do not require it.
+            if (instructions.any { instruction ->
+                    (instruction as? ReferenceInstruction)?.reference?.toString() == "TEXT_POST_APP_INACTIVE"
+                }) score += 100
+
+            Triple(classDef.type, method, score)
+        }
+    }
+
+    val bestScore = candidates.maxOfOrNull { it.third }
+        ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method not found")
+    val best = candidates.filter { it.third == bestScore }
+    if (best.size != 1) {
+        throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder is ambiguous (${best.size} candidates)")
+    }
+    return best.single().first
+}
 
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
@@ -110,43 +147,46 @@ val downloadMediaPatch = bytecodePatch(
             }
         }
 
-        FeedMenuBuilderFingerprint.apply {
-            method.apply {
-                val implementation = implementation as? MutableMethodImplementation
-                    ?: throw IllegalStateException("MyInsta2: feed menu builder is not mutable")
-                var arrayListRegister = -1
-                var checkCastRegister = -1
-                var checkCastIndex = -1
+        val feedMenuBuilderClass = findFeedMenuBuilderClass()
+        val feedMenuBuilder = classBy { it.type == feedMenuBuilderClass }?.classDef
+            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder class is not mutable")
+        val builderMethod = feedMenuBuilder.methods.firstOrNull { method ->
+            method.returnType == "V" && method.implementation?.instructions?.any { instruction ->
+                instruction.opcode == Opcode.NEW_INSTANCE &&
+                    (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
+            } == true
+        } ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method disappeared")
 
-                if (implementation.instructions.firstOrNull()?.opcode == Opcode.INVOKE_STATIC) {
-                    arrayListRegister = implementation.instructions.getOrNull(1)?.outputRegister() ?: -1
-                    checkCastIndex = implementation.instructions.indexOfFirst { it.opcode == Opcode.CHECK_CAST }
-                    if (checkCastIndex >= 0) checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
-                } else {
-                    for (instruction in implementation.instructions.filter {
-                        it.opcode == Opcode.NEW_INSTANCE && (it as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
-                    }) {
-                        val index = implementation.instructions.indexOf(instruction)
-                        if (index + 3 >= implementation.instructions.size) continue
-                        if (implementation.instructions[index + 2].opcode == Opcode.IGET_OBJECT && implementation.instructions[index + 3].opcode == Opcode.CHECK_CAST) {
-                            arrayListRegister = implementation.instructions[index + 1].outputRegister() ?: -1
-                            checkCastIndex = index + 3
-                            checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
-                            break
-                        }
-                    }
-                }
+        builderMethod.apply {
+            val implementation = implementation as? MutableMethodImplementation
+                ?: throw IllegalStateException("MyInsta2: feed menu builder is not mutable")
+            var arrayListRegister = -1
+            var checkCastRegister = -1
+            var checkCastIndex = -1
 
-                if (arrayListRegister < 0 || checkCastRegister < 0 || checkCastIndex < 0) {
-                    throw IllegalStateException("MyInsta2: could not locate feed overflow ArrayList registers")
-                }
-
-                val addButtonRef = methodRef(EXTENSION_CLASS, "addFeedOverflowButton", listOf("Ljava/lang/Object;", "Ljava/util/ArrayList;"), "V")
-                implementation.addInstruction(
-                    checkCastIndex + 1,
-                    BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, checkCastRegister, arrayListRegister, 0, 0, 0, addButtonRef),
-                )
+            for (index in 0 until implementation.instructions.size - 3) {
+                if (!isArrayListNewInstance(implementation.instructions[index])) continue
+                if (implementation.instructions[index + 1].opcode != Opcode.INVOKE_DIRECT) continue
+                if (implementation.instructions[index + 2].opcode != Opcode.IGET_OBJECT) continue
+                if (implementation.instructions[index + 3].opcode != Opcode.CHECK_CAST) continue
+                arrayListRegister = implementation.instructions[index].outputRegister() ?: -1
+                checkCastIndex = index + 3
+                checkCastRegister = implementation.instructions[checkCastIndex].outputRegister() ?: -1
+                if (arrayListRegister >= 0 && checkCastRegister >= 0) break
             }
+
+            if (arrayListRegister < 0 || checkCastRegister < 0 || checkCastIndex < 0) {
+                throw IllegalStateException("MyInsta2: could not locate feed overflow ArrayList registers")
+            }
+            if (arrayListRegister > 15 || checkCastRegister > 15) {
+                throw IllegalStateException("MyInsta2: feed overflow builder uses registers above v15; range invoke required")
+            }
+
+            val addButtonRef = methodRef(EXTENSION_CLASS, "addFeedOverflowButton", listOf("Ljava/lang/Object;", "Ljava/util/ArrayList;"), "V")
+            implementation.addInstruction(
+                checkCastIndex + 1,
+                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, checkCastRegister, arrayListRegister, 0, 0, 0, addButtonRef),
+            )
         }
 
         FeedOverflowClickFingerprint.apply {
