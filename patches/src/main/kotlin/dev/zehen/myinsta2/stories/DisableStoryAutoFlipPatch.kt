@@ -10,9 +10,9 @@ import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
 /**
  * Instagram 445 story-timeout callback.
  *
- * Stripped Morphe runtimes do not contain BytecodeUtilsKt, so this patch
- * mutates the dexlib2 implementation directly rather than using Morphe's
- * bytecode helper extensions.
+ * The stripped runtime does not provide the convenience bytecode helpers used
+ * by older patch implementations, so this patch mutates the dexlib2
+ * implementation directly.
  */
 private object StoryAutoFlipFingerprint : Fingerprint(
     definingClass = "Linstagram/features/stories/fragment/ReelViewerFragment;",
