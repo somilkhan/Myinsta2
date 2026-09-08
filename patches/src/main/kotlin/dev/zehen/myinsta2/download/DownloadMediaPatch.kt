@@ -14,6 +14,7 @@ import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22x
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
@@ -22,6 +23,7 @@ import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
 private const val OPTION_CLASS = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
 private const val EXTENSION_CLASS = "Ldev/zehen/myinsta2/extension/FeedButton;"
 private const val MEDIA_CLASS = "Lcom/instagram/feed/media/Media;"
+private const val ACTIVITY_CLASS = "Landroid/app/Activity;"
 
 private object OptionEnumInitialiserFingerprint : Fingerprint(
     definingClass = OPTION_CLASS,
@@ -51,6 +53,23 @@ private fun methodRef(
 private fun isArrayListNewInstance(instruction: com.android.tools.smali.dexlib2.iface.instruction.Instruction): Boolean =
     instruction.opcode == Opcode.NEW_INSTANCE &&
         (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljava/util/ArrayList;"
+
+private data class ActivityFieldAccess(
+    val field: FieldReference,
+    val opcode: Opcode,
+)
+
+private fun findActivityFieldAccess(
+    methodImplementation: com.android.tools.smali.dexlib2.iface.MethodImplementation?,
+): ActivityFieldAccess? {
+    val instructions = methodImplementation?.instructions ?: return null
+    return instructions.firstNotNullOfOrNull { instruction ->
+        if (instruction.opcode != Opcode.IGET_OBJECT && instruction.opcode != Opcode.SGET_OBJECT) return@firstNotNullOfOrNull null
+        val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference ?: return@firstNotNullOfOrNull null
+        if (field.type != ACTIVITY_CLASS) return@firstNotNullOfOrNull null
+        ActivityFieldAccess(field, instruction.opcode)
+    }
+}
 
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
@@ -169,8 +188,31 @@ val downloadMediaPatch = bytecodePatch(
             method.apply {
                 val implementation = implementation as? MutableMethodImplementation
                     ?: throw IllegalStateException("MyInsta2: feed overflow click handler is not mutable")
-                val activityField = classDef.fields.firstOrNull { it.type == "Landroid/app/Activity;" }
-                    ?: throw IllegalStateException("MyInsta2: feed overflow Activity field not found")
+
+                // Do not assume LX/Zxv declares an Activity field itself. On 445 the
+                // field may be inherited or owned by another obfuscated class. Resolve
+                // the exact FieldReference from bytecode so the owner/name/type stay valid.
+                var activityAccess = findActivityFieldAccess(implementation)
+                var hierarchyClass = classDef
+                var hierarchyDepth = 0
+                while (activityAccess == null && hierarchyDepth < 8) {
+                    val superclass = hierarchyClass.superclass
+                    if (superclass == null || superclass == "Ljava/lang/Object;") break
+                    val superclassDef = runCatching { classDefBy(superclass) }.getOrNull() ?: break
+                    activityAccess = superclassDef.methods.asSequence()
+                        .mapNotNull { candidate -> findActivityFieldAccess(candidate.implementation) }
+                        .firstOrNull()
+                    hierarchyClass = superclassDef
+                    hierarchyDepth++
+                }
+                val resolvedActivityAccess = activityAccess
+                    ?: throw IllegalStateException("MyInsta2: feed overflow Activity field access not found in 445 click-handler hierarchy")
+                val activityField = resolvedActivityAccess.field
+
+                if (implementation.registerCount < 6) {
+                    throw IllegalStateException("MyInsta2: feed overflow click handler has insufficient registers for Activity hook")
+                }
+
                 val getter = classDef.methods.firstOrNull {
                     it.name == "A01" && it.returnType == MEDIA_CLASS && it.parameterTypes == listOf(classDef.type) && it.implementation != null
                 } ?: throw IllegalStateException("MyInsta2: exact 445 feed media getter LX/Zxv;->A01 not found")
@@ -182,21 +224,24 @@ val downloadMediaPatch = bytecodePatch(
                 val originalLabel = implementation.newLabelForIndex(0)
 
                 val optionClassRef = methodRef(EXTENSION_CLASS, "isCustomButtonPressed", listOf(OPTION_CLASS), "Z")
-                val clickRef = methodRef(EXTENSION_CLASS, "customButtonOnClick", listOf(OPTION_CLASS, "Landroid/content/Context;", "Ljava/lang/Object;"), "Z")
+                val clickRef = methodRef(EXTENSION_CLASS, "customButtonOnClick", listOf(OPTION_CLASS, ACTIVITY_CLASS, "Ljava/lang/Object;"), "Z")
                 val getterRef = methodRef(
                     getter.definingClass,
                     getter.name,
                     getter.parameterTypes.map(CharSequence::toString),
                     getter.returnType.toString(),
                 )
-                val activityRef = ImmutableFieldReference(classDef.type, activityField.name, activityField.type)
 
                 implementation.addInstruction(0, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, p1))
                 implementation.addInstruction(1, BuilderInstruction35c(Opcode.INVOKE_STATIC, 1, 1, 0, 0, 0, 0, optionClassRef))
                 implementation.addInstruction(2, BuilderInstruction11x(Opcode.MOVE_RESULT, 0))
                 implementation.addInstruction(3, BuilderInstruction21t(Opcode.IF_EQZ, 0, originalLabel))
                 implementation.addInstruction(4, BuilderInstruction22x(Opcode.MOVE_OBJECT_FROM16, 0, p0))
-                implementation.addInstruction(5, BuilderInstruction22c(Opcode.IGET_OBJECT, 5, 0, activityRef))
+                if (resolvedActivityAccess.opcode == Opcode.IGET_OBJECT) {
+                    implementation.addInstruction(5, BuilderInstruction22c(Opcode.IGET_OBJECT, 5, 0, ImmutableFieldReference(activityField.definingClass, activityField.name, activityField.type)))
+                } else {
+                    implementation.addInstruction(5, BuilderInstruction21c(Opcode.SGET_OBJECT, 5, ImmutableFieldReference(activityField.definingClass, activityField.name, activityField.type)))
+                }
                 implementation.addInstruction(6, BuilderInstruction35c(Opcode.INVOKE_STATIC, 1, 0, 0, 0, 0, 0, getterRef))
                 implementation.addInstruction(7, BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, 2))
                 implementation.addInstruction(8, BuilderInstruction35c(Opcode.INVOKE_STATIC, 3, 1, 5, 2, 0, 0, clickRef))
