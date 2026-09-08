@@ -69,7 +69,7 @@ jobs:
             echo "Published MPP manifest version does not match release ${RELEASE_VERSION}." >&2
             exit 1
           }
-          grep -Eq '^Patcher-Version: [0-9]+\\.[0-9]+\\.[0-9]+' <<<"$manifest" || {
+          grep -Eq '^Patcher-Version: [0-9]+\.[0-9]+\.[0-9]+' <<<"$manifest" || {
             echo 'Published MPP has no valid Patcher-Version.' >&2
             exit 1
           }
