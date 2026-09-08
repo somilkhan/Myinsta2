@@ -40,6 +40,7 @@ val directThreadMediaPatch = bytecodePatch(
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
+    extendWith("extensions/myinsta.mpe")
 
     execute {
         DirectThreadMediaSaverTaskFingerprint.apply {

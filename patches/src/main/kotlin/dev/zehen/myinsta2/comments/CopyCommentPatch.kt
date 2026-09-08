@@ -45,6 +45,7 @@ val copyCommentPatch = bytecodePatch(
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
+    extendWith("extensions/myinsta.mpe")
 
     execute {
         AddCommentButtonFingerprint.method.apply {
@@ -72,10 +73,8 @@ val copyCommentPatch = bytecodePatch(
                 ?: throw IllegalStateException("MyInsta2: comment object register not found")
             implementation.addInstruction(
                 arrayListIndex + 3,
-                BuilderInstruction35c(
-                    Opcode.INVOKE_STATIC, 2, arrayRegister, commentRegister, 0, 0, 0,
-                    methodRef("addButton", listOf("Ljava/util/List;", "Ljava/lang/Object;"), "V"),
-                ),
+                BuilderInstruction35c(Opcode.INVOKE_STATIC, 2, arrayRegister, commentRegister, 0, 0, 0,
+                    methodRef("addButton", listOf("Ljava/util/List;", "Ljava/lang/Object;"), "V")),
             )
         }
 

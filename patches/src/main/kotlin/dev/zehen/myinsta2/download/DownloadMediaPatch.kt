@@ -100,6 +100,7 @@ val downloadMediaPatch = bytecodePatch(
     default = false,
 ) {
     compatibleWith(INSTAGRAM_445)
+    extendWith("extensions/myinsta.mpe")
 
     execute {
         OptionEnumInitialiserFingerprint.apply {
@@ -163,7 +164,7 @@ val downloadMediaPatch = bytecodePatch(
         val builderClassType = feedMenuBuilderClass
             ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method not found")
         val builderMethodName = feedMenuBuilderMethodName
-            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method name not found")
+            ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method name disappeared")
         val builderClass = mutableClassDefBy(builderClassType)
         val builderMethod = builderClass.methods.firstOrNull { it.name == builderMethodName && it.returnType == "V" }
             ?: throw IllegalStateException("MyInsta2: Instagram 445 feed overflow builder method disappeared")

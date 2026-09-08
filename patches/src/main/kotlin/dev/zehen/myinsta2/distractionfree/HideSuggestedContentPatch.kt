@@ -23,6 +23,7 @@ val hideSuggestedContentPatch = bytecodePatch(
     default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
+    extendWith("extensions/myinsta.mpe")
 
     execute {
         val implementation = FeedItemParseFromJsonFingerprint.method.implementation
