@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: morphe-build-${{ github.ref }}
@@ -54,8 +54,6 @@ jobs:
           done < <(grep -RIlz 'Ldev/zehen/myinsta2/extension/' patches/src/main/kotlin --include='*.kt')
 
       - name: Build Morphe bundle
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gradle buildAndroid --stacktrace
 
       - name: Validate Morphe bundle contents
@@ -101,8 +99,6 @@ jobs:
             fi
           done
 
-          # Validate production classes by stable JVM class-name fragments rather
-          # than Unicode patch display names, which are not reliable in `strings`.
           for class_fragment in \
             'MyInsta2Kt' \
             'GhostModePatchKt' \
@@ -118,24 +114,9 @@ jobs:
             echo 'Opt-in story-anonymity patch is present in the bundle, as expected.'
           fi
 
-      - name: Prepare stable bundle name
-        if: github.event_name != 'pull_request'
-        run: cp patches/build/libs/*.mpp myinsta2.mpp
-
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v6
         with:
           name: myinsta2-morphe-patches
           path: patches/build/libs/*.mpp
           if-no-files-found: error
-
-      - name: Publish latest Morphe bundle
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest myinsta2.mpp \
-            --target "$GITHUB_SHA" \
-            --title "MyInsta2 latest" \
-            --notes "Latest Morphe patch bundle for Instagram 445.0.0.45.83."
