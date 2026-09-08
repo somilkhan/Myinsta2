@@ -9,15 +9,15 @@ A feature is marked **ported** when its 445 implementation and target fingerprin
 | Feature | 364 reference | 445 port | Runtime | Notes |
 |---|---:|---:|---:|---|
 | Ghost Mode — DM seen | yes | ported | pending | Exact 445 `LX/JmB;->A09(UserSession, LX/1ew;, String, String, String):V` / `mark_thread_seen-` mapping |
-| Ghost Mode — story seen | yes | ported | pending | Exact 445 `LX/0hI;->A06(Context, String, Z):V` / `media/seen/?reel=%s&live_vod=0` mapping |
+| Ghost Mode — story seen | yes | ported | pending | Exact 445 `LX/0hI;->A04(UserSession):LX/7po;` / `media/seen/?reel=%s&live_vod=0` mapping; implementation returns a type-correct null before request construction |
 | Ghost Mode — live seen | yes | candidate | pending | Exact 445 Tigon `startRequest(LX/3kv;,LX/3kz;,LX/3lr;):LX/8IW;`; URI boundary is identified, but this hook remains opt-in and is not part of the production aggregate |
 | Ghost Mode — typing status | yes | ported | pending | Exact 445 `LX/5nq;->Geu(LX/2mc;,LX/Ovs;,LX/ADU;):V` containing `direct_v2/threads/%s/toggle_typing_indicator_control/`; patch returns before request construction |
 | Anti-Revoke notification | yes | ported | pending | Exact 445 `LX/72e;->A01(Intent, LX/2ej;):V` / `revoke_notification` mapping |
 | Hide Ads | yes | ported | pending | Exact 445 `LX/4jB;->A02(LX/4jB;, LX/9il;, LX/4oh;):Z` / `Is ad pod` mapping |
 | Disable Story Auto-Flipping | yes | ported | pending | Exact 445 `ReelViewerFragment->Fji(Object):V` / `userSession`; implementation uses a return-early timeout callback |
 | Disable Video Autoplay | yes | ported | pending | Exact 445 `LX/13A;->A00(UserSession):Z` with all three autoplay-setting strings |
-| Feed Media Downloader | yes | ported | pending | Exact 445 MediaOption enum/menu/click anchors and exact `LX/Zxv;->A01(LX/Zxv;):Lcom/instagram/feed/media/Media;` getter; URL extraction remains heuristic |
-| Direct Message Media Download | yes | ported | pending | Exact 445 `LX/Kj4;->A07(LX/XKO;,Media,LX/6ar;,String,Function1,I,Z,Z):V` saver task entry; media URL extraction remains heuristic |
+| Feed Media Downloader | yes | candidate | pending | Earlier 445 menu/getter anchors are present in analysis, but no stable executable feed-download hook has been promoted to production |
+| Direct Message Media Download | yes | candidate | pending | Exact 445 `LX/Kj4;->A07(LX/XKO;,Media,LX/6ar;,String,Function1,I,Z,Z):V` saver task entry exists; executable interception still needs verifier/runtime validation |
 | Copy Comment | yes | candidate | pending | Exact 445 `LX/FZO;->A09(...):ArrayList`, `A19(Vfc):V`; runtime semantics still unvalidated |
 | Distraction Free | yes | partial | pending | Suggested-content parser anchor exists; executable filtering remains intentionally disabled |
 | Copy helpers | yes | partial | pending | Copy Comment has an exact 445 candidate; other helpers remain unresolved |
@@ -33,7 +33,7 @@ A feature is marked **ported** when its 445 implementation and target fingerprin
 
 The supplied Library artifact was reconstructed as `base.apk` from `base.zip.001` + `base.zip.002`. Its embedded version string is `445.0.0.45.83`, confirming that the available APK is the repository's 445 target rather than 443.
 
-The current exact target mappings were checked against that APK's DEX files for DM seen, story seen, typing, anti-revoke, Hide Ads, story timeout, video autoplay, feed media getter, DirectThread saver task, and Copy Comment. The typing mapping specifically uses `LX/5nq;->Geu(LX/2mc;,LX/Ovs;,LX/ADU;):V`; the older `LX/4tv;->A02(...):List` documentation was incorrect and has been removed.
+The current exact target mappings were checked against that APK's DEX files for DM seen, story seen, typing, anti-revoke, Hide Ads, story timeout, video autoplay, DirectThread saver task, and Copy Comment. The story-seen mapping specifically uses `LX/0hI;->A04(Lcom/instagram/common/session/UserSession;):LX/7po;`; the older `A06` documentation was incorrect and is no longer used by the production patch.
 
 ## Current build verification
 
