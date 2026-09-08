@@ -26,7 +26,7 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
 
     private static final String[] CHANGES = new String[]{
             "First-launch and post-update changelog popup.",
-            "MyInsta2 settings surface foundation.",
+            "MyInsta Settings entry point and settings surface foundation.",
             "Instagram 445 stability and runtime helper fixes."
     };
 
@@ -52,7 +52,9 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
         if (context == null) return false;
         Context appContext = context.getApplicationContext();
         if (!(appContext instanceof Application)) return false;
-        ((Application) appContext).registerActivityLifecycleCallbacks(callbacks);
+        Application application = (Application) appContext;
+        application.registerActivityLifecycleCallbacks(callbacks);
+        MyInstaSettingsEntryPoint.install(application);
         return true;
     }
 
