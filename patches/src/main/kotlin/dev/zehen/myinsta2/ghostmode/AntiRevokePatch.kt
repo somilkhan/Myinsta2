@@ -21,7 +21,9 @@ private object RevokedMessageNotificationFingerprint : Fingerprint(
 val antiRevokePatch = bytecodePatch(
     name = "Anti Revoke — notification",
     description = "Suppresses Instagram's revoked-message notification action on 445.",
-    default = false,
+    // This patch is a dependency of the default MyInsta2 aggregate; Morphe
+    // executes dependencies when the parent patch executes.
+    default = true,
 ) {
     compatibleWith(INSTAGRAM_445)
 
