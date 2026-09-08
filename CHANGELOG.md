@@ -1,3 +1,12 @@
+## [1.0.1](https://github.com/somilkhan/Myinsta2/compare/v1.0.0...v1.0.1) (2026-09-08)
+
+### 🐛 Bug Fixes
+
+* build release version without changing project version ([308ce10](https://github.com/somilkhan/Myinsta2/commit/308ce10d6dce97d47f6557786306e6014eb4aa1e))
+* keep project version independent from release tags ([e5b8a33](https://github.com/somilkhan/Myinsta2/commit/e5b8a331a98cbe9f8c13f2b401ffa49d94037d82))
+* remove failing release backmerge step ([1317b24](https://github.com/somilkhan/Myinsta2/commit/1317b248600122a9a968c01ba5afa2a617f76e06))
+* remove optional backmerge dependency ([f4c21f8](https://github.com/somilkhan/Myinsta2/commit/f4c21f8234d8713108722fc91d205487c28ebeef))
+
 ## 1.0.0 (2026-09-08)
 
 ### 🐛 Bug Fixes
