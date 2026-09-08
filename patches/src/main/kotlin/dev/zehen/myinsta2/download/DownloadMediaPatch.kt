@@ -3,6 +3,7 @@ package dev.zehen.myinsta2.download
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction10x
@@ -12,6 +13,8 @@ import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21t
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22c
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction22x
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -58,6 +61,25 @@ private data class ActivityFieldAccess(
     val field: FieldReference,
     val opcode: Opcode,
 )
+
+private fun fieldActivityAccess(field: Field): ActivityFieldAccess? {
+    if (field.type != ACTIVITY_CLASS) return null
+    val reference = ImmutableFieldReference(field.definingClass, field.name, field.type)
+    val opcode = if (AccessFlags.STATIC.isSet(field.accessFlags)) Opcode.SGET_OBJECT else Opcode.IGET_OBJECT
+    return ActivityFieldAccess(reference, opcode)
+}
+
+private fun findActivityFieldInHierarchy(start: ClassDef, classDefBy: (String) -> ClassDef?): ActivityFieldAccess? {
+    var current: ClassDef? = start
+    repeat(8) {
+        val candidate = current ?: return null
+        candidate.fields.firstNotNullOfOrNull(::fieldActivityAccess)?.let { return it }
+        val superclass = candidate.superclass
+        if (superclass == null || superclass == "Ljava/lang/Object;") return null
+        current = runCatching { classDefBy(superclass) }.getOrNull()
+    }
+    return null
+}
 
 private fun findActivityFieldAccess(
     methodImplementation: com.android.tools.smali.dexlib2.iface.MethodImplementation?,
@@ -175,19 +197,8 @@ val downloadMediaPatch = bytecodePatch(
             method.apply {
                 val implementation = implementation as? MutableMethodImplementation
                     ?: throw IllegalStateException("MyInsta2: feed overflow click handler is not mutable")
-                var activityAccess = findActivityFieldAccess(implementation)
-                var hierarchyClass = classDef
-                var hierarchyDepth = 0
-                while (activityAccess == null && hierarchyDepth < 8) {
-                    val superclass = hierarchyClass.superclass
-                    if (superclass == null || superclass == "Ljava/lang/Object;") break
-                    val superclassDef = runCatching { classDefBy(superclass) }.getOrNull() ?: break
-                    activityAccess = superclassDef.methods.asSequence()
-                        .mapNotNull { candidate -> findActivityFieldAccess(candidate.implementation) }
-                        .firstOrNull()
-                    hierarchyClass = superclassDef
-                    hierarchyDepth++
-                }
+                var activityAccess = findActivityFieldInHierarchy(classDef) { descriptor -> classDefBy(descriptor) }
+                if (activityAccess == null) activityAccess = findActivityFieldAccess(implementation)
                 val resolvedActivityAccess = activityAccess
                     ?: throw IllegalStateException("MyInsta2: feed overflow Activity field access not found in 445 click-handler hierarchy")
                 val activityField = resolvedActivityAccess.field
