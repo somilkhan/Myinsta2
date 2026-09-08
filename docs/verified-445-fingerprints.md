@@ -8,7 +8,7 @@ These mappings were extracted from the supplied target APK's DEX files. They are
 |---|---|---|---|
 | Ghost Mode — DM seen | `LX/JmB;` | `A09` | `(Lcom/instagram/common/session/UserSession;LX/1ew;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V`, string `mark_thread_seen-` |
 | Ghost Mode — story seen | `LX/0hI;` | `A06` | `(Landroid/content/Context;Ljava/lang/String;Z)V`, string `media/seen/?reel=%s&live_vod=0` |
-| Ghost Mode — typing | `LX/4tv;` | `A02` | `(... )Ljava/util/List;`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
+| Ghost Mode — typing | `LX/5nq;` | `Geu` | `(LX/2mc;LX/Ovs;LX/ADU;)V`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
 | Ghost Mode — live heartbeat builder | `LX/QyW;` | `A00` | `(Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;)LX/7pe;`, endpoint `/live/%s/heartbeat_and_get_viewer_count/` |
 | Live heartbeat network boundary | `Lcom/instagram/api/tigon/TigonServiceLayer;` | `startRequest` | `(LX/3kv;LX/3kz;LX/3lr;)LX/8IW;`; URI is loaded into `v1` from `p1` immediately before `Ljava/net/URI;->getHost()` |
 | Anti-Revoke notification | `LX/72e;` | `A01` | `(Landroid/content/Intent;LX/2ej;)V`, string `revoke_notification` |
@@ -27,4 +27,4 @@ The 445 target contains `auto_advance` references, including `ReelViewerFragment
 
 ## Downloader boundary
 
-The feed downloader has exact 445 enum/menu/click anchors and a guarded runtime media resolver, but it remains opt-in until a patched 445 runtime validates media extraction and button dispatch. The DM downloader now targets the exact 445 `LX/Kj4;->A02(...)V` signature instead of selecting an arbitrary void method; it also remains opt-in pending runtime validation.
+The feed downloader has exact 445 enum/menu/click anchors and a guarded runtime media resolver, but it remains opt-in until a patched 445 runtime validates media extraction and button dispatch. The DM downloader targets the exact 445 `LX/Kj4;->A02(...)V` saver signature; it also remains opt-in pending runtime validation.
