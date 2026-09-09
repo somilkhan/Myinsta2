@@ -1,7 +1,6 @@
 package dev.zehen.myinsta2.extension;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +10,6 @@ public final class MyInstaSettingsEntryPoint {
     private static final String ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity";
     private static final String ORIGINAL_RESOURCE_PACKAGE = "com.instagram.android";
     private static final String[] ACTION_BAR_IDS = {"profile_action_bar", "profile_action_bar_stub"};
-    private static final String[] SELF_PROFILE_IDS = {"self_profile_switcher", "profile_switcher"};
     private static final String[] OVERFLOW_IDS = {
             "action_bar_overflow_icon", "action_bar_overflow", "action_bar_overflow_button",
             "overflow_button", "overflow_button_right", "overflow_button_layout",
@@ -34,17 +32,15 @@ public final class MyInstaSettingsEntryPoint {
     }
 
     private static void arm(Activity activity, View root, int attempt) {
-        View resolvedScope = findByAnyResourceName(root, activity, ACTION_BAR_IDS);
-        if (resolvedScope == null) resolvedScope = root;
-        final View scope = resolvedScope;
-
-        View selfMarker = findByAnyResourceName(scope, activity, SELF_PROFILE_IDS);
-        View overflow = findByAnyResourceName(scope, activity, OVERFLOW_IDS);
-        if (isVisible(selfMarker) && isVisible(overflow)) {
+        // Do not scope lookup to profile_action_bar/profile_action_bar_stub. On 445 the
+        // stub can remain in the hierarchy after inflation, which would hide the actual
+        // overflow button from findViewById(). The verified A05 hook already identifies
+        // the profile action-bar setup, so search the active hierarchy directly.
+        View overflow = findByAnyResourceName(root, activity, OVERFLOW_IDS);
+        if (isVisible(overflow)) {
             final View finalOverflow = overflow;
             finalOverflow.setOnLongClickListener(v -> {
                 try {
-                    if (!isOwnProfile(root, activity)) return false;
                     Intent intent = new Intent(activity, Class.forName(ACTIVITY));
                     activity.startActivity(intent);
                     MyInstaDiagnostics.recordSettingsLaunch(activity);
@@ -67,17 +63,11 @@ public final class MyInstaSettingsEntryPoint {
         }, delay);
     }
 
-    private static boolean isOwnProfile(View root, Context context) {
-        View scope = findByAnyResourceName(root, context, ACTION_BAR_IDS);
-        if (scope == null) scope = root;
-        return isVisible(findByAnyResourceName(scope, context, SELF_PROFILE_IDS));
-    }
-
-    private static View findByAnyResourceName(View root, Context context, String[] names) {
+    private static View findByAnyResourceName(View root, Activity activity, String[] names) {
         if (root == null) return null;
         for (String name : names) {
-            int id = context.getResources().getIdentifier(name, "id", context.getPackageName());
-            if (id == 0) id = context.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
+            int id = activity.getResources().getIdentifier(name, "id", activity.getPackageName());
+            if (id == 0) id = activity.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
             if (id != 0) {
                 View view = root.findViewById(id);
                 if (view != null) return view;
