@@ -1,3 +1,9 @@
+## [1.1.4](https://github.com/somilkhan/Myinsta2/compare/v1.1.3...v1.1.4) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* tolerate transformed 445 profile action-bar invoke ([4e96518](https://github.com/somilkhan/Myinsta2/commit/4e965184a8b4dbb2d61016299c7ae98e10d83cdf))
+
 ## [1.1.3](https://github.com/somilkhan/Myinsta2/compare/v1.1.2...v1.1.3) (2026-09-09)
 
 ### 🐛 Bug Fixes
