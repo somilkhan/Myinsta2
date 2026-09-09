@@ -77,6 +77,13 @@ jobs:
           sha256sum "$bundle"
           unzip -tq "$bundle"
 
+          if ! unzip -l "$bundle" | grep -Eq '[[:space:]]classes([0-9]+)?\.dex$'; then
+            echo 'MPP bundle contains no DEX entries; Morphe Manager cannot load patches from this bundle.' >&2
+            exit 1
+          fi
+          echo 'DEX entries:'
+          unzip -l "$bundle" | grep -E '[[:space:]]classes([0-9]+)?\.dex$'
+
           strings "$bundle" > "$RUNNER_TEMP/mpp-strings.txt"
           if grep -nE 'FreeRegisterProviderKt|registersUsed|BytecodeUtilsKt|BytecodeUtils' "$RUNNER_TEMP/mpp-strings.txt"; then
             echo 'Forbidden stripped-runtime helper leaked into the MPP bundle.' >&2
