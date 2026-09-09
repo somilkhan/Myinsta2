@@ -1,3 +1,9 @@
+## [1.1.3](https://github.com/somilkhan/Myinsta2/compare/v1.1.2...v1.1.3) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* force clean Android MPP rebuild during release ([2e00955](https://github.com/somilkhan/Myinsta2/commit/2e00955aa32f618aae892e33edac479aba97f489))
+
 ## [1.1.2](https://github.com/somilkhan/Myinsta2/compare/v1.1.1...v1.1.2) (2026-09-09)
 
 ### 🐛 Bug Fixes
