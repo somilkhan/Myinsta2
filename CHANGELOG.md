@@ -1,3 +1,17 @@
+## [1.1.0](https://github.com/somilkhan/Myinsta2/compare/v1.0.7...v1.1.0) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* correct diagnostics Java compilation ([02462f2](https://github.com/somilkhan/Myinsta2/commit/02462f28fcfe1b82a27f80cf65c1455038e18810))
+* hook MyInsta settings from verified 445 profile path ([80d523d](https://github.com/somilkhan/Myinsta2/commit/80d523d4d8d546e052dda2716349b809d1a0a90f))
+* inject settings hook into verified 445 profile path ([8f9da73](https://github.com/somilkhan/Myinsta2/commit/8f9da7380c64201ecef99df693c98f0ccf41cea2))
+* remove obsolete generic settings installer ([48a758a](https://github.com/somilkhan/Myinsta2/commit/48a758a26ca74b48b0ed8d63bade5db22c20e971))
+
+### ✨ New Features
+
+* add MyInsta2 diagnostics runtime ([aaa9af7](https://github.com/somilkhan/Myinsta2/commit/aaa9af7748312c78638740ac5b476a34593c7b15))
+* add MyInsta2 diagnostics UI and bug export ([4b2c0e2](https://github.com/somilkhan/Myinsta2/commit/4b2c0e23eafd349359de9b3dda2d4ccc8e7232f7))
+
 ## [1.0.7](https://github.com/somilkhan/Myinsta2/compare/v1.0.6...v1.0.7) (2026-09-09)
 
 ### 🐛 Bug Fixes

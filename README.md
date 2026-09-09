@@ -11,7 +11,7 @@ Add this repository once as a **Remote Patch Source** in Morphe Manager:
 Morphe will read the generated `patches-bundle.json` and follow each versioned release automatically. New releases use semantic version tags and versioned `.mpp` assets, so you do **not** need to manually download the MPP after every update.
 
 <!-- PATCHES_START -->
-> **[v1.0.7](https://github.com/somilkhan/Myinsta2/releases/tag/v1.0.7)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+> **[v1.1.0](https://github.com/somilkhan/Myinsta2/releases/tag/v1.1.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
 
 | Patch | Description | Options |
 |---|---|---|
@@ -27,7 +27,7 @@ Morphe will read the generated `patches-bundle.json` and follow each versioned r
 | [Hide Ads](#hide-ads) | Suppresses the Instagram ad-pod predicate on the 445 target. |  |
 | [Hide suggested content](#hide-suggested-content) | Drops Instagram 445 suggested feed units by invalidating their FeedItem JSON type key. |  |
 | [MyInsta2](#myinsta2) | Validated MyInsta2 features for Instagram 445. |  |
-| [MyInsta2 — Changelog + Settings](#myinsta2-changelog-settings) | Shows the first-launch/update changelog and exposes the MyInsta profile long-press settings surface. |  |
+| [MyInsta2 — Changelog + Settings](#myinsta2-changelog-settings) | Shows the first-launch/update changelog and exposes the verified Instagram 445 profile long-press settings surface. |  |
 | [View Live Anonymously](#view-live-anonymously) | Blocks Instagram's live viewer-count heartbeat request on Instagram 445; opt-in until runtime validation. |  |
 <!-- PATCHES_END -->
 
