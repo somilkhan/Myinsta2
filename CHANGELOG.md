@@ -1,3 +1,9 @@
+## [1.0.7](https://github.com/somilkhan/Myinsta2/compare/v1.0.6...v1.0.7) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* resolve cloned resource package and rearm profile hook ([9d6d3e7](https://github.com/somilkhan/Myinsta2/commit/9d6d3e7e4a888eee0d8c570c24830b5a6fad2d03))
+
 ## [1.0.6](https://github.com/somilkhan/Myinsta2/compare/v1.0.5...v1.0.6) (2026-09-09)
 
 ### 🐛 Bug Fixes
