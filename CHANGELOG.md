@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/somilkhan/Myinsta2/compare/v1.0.4...v1.0.5) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* generate patch metadata from Android-ready bundle ([638110e](https://github.com/somilkhan/Myinsta2/commit/638110e8fbacaa35ca5418cce486ff46c475782c))
+
 ## [1.0.4](https://github.com/somilkhan/Myinsta2/compare/v1.0.3...v1.0.4) (2026-09-09)
 
 ### 🐛 Bug Fixes
