@@ -6,8 +6,8 @@ These mappings were extracted from the supplied target APK (`sha256: 9a8d3b0782f
 
 | Feature / subsystem | Defining class | Method | Signature / evidence |
 |---|---|---|---|
-| **MyInsta2 settings entry** | `LX/Dyw;` | `A05` | `(LX/AOq;I)V`; contains `self_profile_switcher` and exact `LX/gAr;->A04(FragmentActivity, UserSession, long, FragmentActivity):void` anchor with registers `{v1,v7,v2,v0}` |
-| Profile action-bar setup | `LX/gAr;` | `A04` | `(Landroidx/fragment/app/FragmentActivity;Lcom/instagram/common/session/UserSession;JLandroidx/fragment/app/FragmentActivity;)V`; contains `self_profile_switcher` and calls `A08` |
+| **MyInsta2 settings entry** | `LX/Dyw;` | `A05` | `(LX/AOq;LX/KCa;)V`; contains exactly one `invoke-static` to `LX/gAr;->A04(Landroidx/fragment/app/FragmentActivity;LX/AOq;Lcom/instagram/common/session/UserSession;Ljava/lang/Integer;)V` with four registers `{v1,v5,v12,v12}` |
+| Profile action-bar setup | `LX/gAr;` | `A04` | `(Landroidx/fragment/app/FragmentActivity;LX/AOq;Lcom/instagram/common/session/UserSession;Ljava/lang/Integer;)V` |
 | Ghost Mode — DM seen | `LX/JmB;` | `A09` | `(Lcom/instagram/common/session/UserSession;LX/1ew;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V`, string `mark_thread_seen-` |
 | Ghost Mode — story seen | `LX/0hI;` | `A04` | `(Lcom/instagram/common/session/UserSession;)LX/7po;`, endpoint `media/seen/?reel=%s&live_vod=0` |
 | Ghost Mode — typing | `LX/5nq;` | `Geu` | `(LX/2mc;LX/Ovs;LX/ADU;)V`, endpoint `direct_v2/threads/%s/toggle_typing_indicator_control/` |
