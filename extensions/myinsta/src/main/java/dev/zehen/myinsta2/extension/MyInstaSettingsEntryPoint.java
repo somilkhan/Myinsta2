@@ -1,123 +1,83 @@
 package dev.zehen.myinsta2.extension;
 
 import android.app.Activity;
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 
-/**
- * Installs the MyInsta settings gesture on Instagram's self-profile overflow
- * control. This code deliberately does not depend on view coordinates or
- * visible text.
- */
+/** Exact Instagram-445 profile action-bar entry point for MyInsta2 settings. */
 public final class MyInstaSettingsEntryPoint {
     private static final String ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity";
     private static final String ORIGINAL_RESOURCE_PACKAGE = "com.instagram.android";
-
+    private static final String[] ACTION_BAR_IDS = {"profile_action_bar", "profile_action_bar_stub"};
+    private static final String[] SELF_PROFILE_IDS = {"self_profile_switcher", "profile_switcher"};
     private static final String[] OVERFLOW_IDS = {
-            "action_bar_overflow_icon",
-            "action_bar_overflow",
-            "action_bar_overflow_button",
-            "overflow_menu"
+            "action_bar_overflow_icon", "action_bar_overflow", "action_bar_overflow_button",
+            "overflow_button", "overflow_button_right", "overflow_button_layout",
+            "more_button", "more_button_click_area", "overflow_menu"
     };
-    private static final String[] SELF_PROFILE_IDS = {
-            "self_profile_switcher",
-            "profile_switcher"
-    };
-
-    private static final Handler MAIN = new Handler(Looper.getMainLooper());
-    private static boolean installed;
-    private static final java.util.Set<ViewTreeObserver> watchedRoots =
-            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
     private MyInstaSettingsEntryPoint() {}
 
-    public static void install(Application application) {
-        if (application == null || installed) return;
-        installed = true;
-        application.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
-            @Override public void onActivityResumed(Activity activity) { arm(activity); }
-            @Override public void onActivityCreated(Activity a, Bundle b) {}
-            @Override public void onActivityStarted(Activity a) {}
-            @Override public void onActivityPaused(Activity a) {}
-            @Override public void onActivityStopped(Activity a) {}
-            @Override public void onActivitySaveInstanceState(Activity a, Bundle b) {}
-            @Override public void onActivityDestroyed(Activity a) {}
-        });
-    }
-
-    private static void arm(Activity activity) {
+    /** Called from the verified Instagram 445 LX/Dyw.A05 -> LX/gAr.A04 path. */
+    public static void onProfileActionBarReady(Activity activity) {
         if (activity == null || activity.isFinishing()) return;
-        MAIN.post(() -> {
-            if (activity.isFinishing()) return;
+        try {
             View root = activity.getWindow().getDecorView();
             if (!(root instanceof ViewGroup)) return;
-
-            installOnProfile(activity, root);
-            ViewTreeObserver observer = root.getViewTreeObserver();
-            synchronized (watchedRoots) {
-                if (observer.isAlive() && !watchedRoots.contains(observer)) {
-                    watchedRoots.add(observer);
-                    observer.addOnGlobalLayoutListener(() -> installOnProfile(activity, root));
-                }
-            }
-            scheduleRetries(activity, root);
-        });
-    }
-
-    private static void scheduleRetries(Activity activity, View root) {
-        final int[] delays = {100, 300, 750, 1500, 3000};
-        for (int delay : delays) {
-            MAIN.postDelayed(() -> {
-                if (!activity.isFinishing() && root.isAttachedToWindow()) {
-                    installOnProfile(activity, root);
-                }
-            }, delay);
+            MyInstaDiagnostics.recordSettingsHook(activity);
+            arm(activity, root, 0);
+        } catch (Throwable error) {
+            MyInstaDiagnostics.error(activity, "SettingsEntryPoint", "arm", error);
         }
     }
 
-    private static void installOnProfile(Activity activity, View root) {
-        if (activity.isFinishing() || !(root instanceof ViewGroup)) return;
+    private static void arm(Activity activity, View root, int attempt) {
+        View resolvedScope = findByAnyResourceName(root, activity, ACTION_BAR_IDS);
+        if (resolvedScope == null) resolvedScope = root;
+        final View scope = resolvedScope;
 
-        Context context = activity;
-        View selfMarker = findByAnyResourceName(root, context, SELF_PROFILE_IDS);
-        if (!isVisible(selfMarker)) return;
+        View selfMarker = findByAnyResourceName(scope, activity, SELF_PROFILE_IDS);
+        View overflow = findByAnyResourceName(scope, activity, OVERFLOW_IDS);
+        if (isVisible(selfMarker) && isVisible(overflow)) {
+            final View finalOverflow = overflow;
+            finalOverflow.setOnLongClickListener(v -> {
+                try {
+                    if (!isOwnProfile(root, activity)) return false;
+                    Intent intent = new Intent(activity, Class.forName(ACTIVITY));
+                    activity.startActivity(intent);
+                    MyInstaDiagnostics.recordSettingsLaunch(activity);
+                    return true;
+                } catch (Throwable error) {
+                    MyInstaDiagnostics.error(activity, "SettingsEntryPoint", "launch", error);
+                    return false;
+                }
+            });
+            return;
+        }
 
-        View overflow = findByAnyResourceName(root, context, OVERFLOW_IDS);
-        if (!isVisible(overflow)) return;
-
-        // Do not cache the View object. Instagram can recycle/rebind the same
-        // view and replace its listener after profile UI inflation.
-        overflow.setOnLongClickListener(v -> {
-            if (!isStillOwnProfile(root, context)) return false;
-            try {
-                Intent intent = new Intent(activity, Class.forName(ACTIVITY));
-                activity.startActivity(intent);
-                return true;
-            } catch (Throwable ignored) {
-                return false;
+        if (attempt >= 5) return;
+        long delay = new long[]{50, 150, 400, 800, 1500}[attempt];
+        final View retryRoot = root;
+        root.postDelayed(() -> {
+            if (!activity.isFinishing() && retryRoot.isAttachedToWindow()) {
+                arm(activity, retryRoot, attempt + 1);
             }
-        });
+        }, delay);
     }
 
-    private static boolean isStillOwnProfile(View root, Context context) {
-        View self = findByAnyResourceName(root, context, SELF_PROFILE_IDS);
-        View overflow = findByAnyResourceName(root, context, OVERFLOW_IDS);
-        return isVisible(self) && isVisible(overflow);
+    private static boolean isOwnProfile(View root, Context context) {
+        View scope = findByAnyResourceName(root, context, ACTION_BAR_IDS);
+        if (scope == null) scope = root;
+        return isVisible(findByAnyResourceName(scope, context, SELF_PROFILE_IDS));
     }
 
     private static View findByAnyResourceName(View root, Context context, String[] names) {
+        if (root == null) return null;
         for (String name : names) {
             int id = context.getResources().getIdentifier(name, "id", context.getPackageName());
-            if (id == 0) {
-                id = context.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
-            }
+            if (id == 0) id = context.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
             if (id != 0) {
                 View view = root.findViewById(id);
                 if (view != null) return view;
