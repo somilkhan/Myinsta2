@@ -26,8 +26,8 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
 
     private static final String[] CHANGES = new String[]{
             "First-launch and post-update changelog popup.",
-            "MyInsta Settings entry point and settings surface foundation.",
-            "Instagram 445 stability and runtime helper fixes."
+            "Verified Instagram 445 MyInsta settings entry point.",
+            "Runtime diagnostics, copy, and bug-report export."
     };
 
     private boolean shownThisProcess;
@@ -54,7 +54,6 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
         if (!(appContext instanceof Application)) return false;
         Application application = (Application) appContext;
         application.registerActivityLifecycleCallbacks(callbacks);
-        MyInstaSettingsEntryPoint.install(application);
         return true;
     }
 
@@ -65,10 +64,8 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
 
     private String getVersionKey(Context context) {
         try {
-            android.content.pm.PackageInfo info = context.getPackageManager()
-                    .getPackageInfo(context.getPackageName(), 0);
-            long versionCode = android.os.Build.VERSION.SDK_INT >= 28
-                    ? info.getLongVersionCode() : info.versionCode;
+            android.content.pm.PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            long versionCode = android.os.Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
             return versionCode + "|" + String.valueOf(info.versionName);
         } catch (Throwable ignored) {
             return "unknown";
@@ -77,8 +74,7 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
 
     private String getVersionName(Context context) {
         try {
-            android.content.pm.PackageInfo info = context.getPackageManager()
-                    .getPackageInfo(context.getPackageName(), 0);
+            android.content.pm.PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             return info.versionName == null ? "Unknown" : info.versionName;
         } catch (Throwable ignored) {
             return "Unknown";
@@ -90,13 +86,10 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
         root.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(activity, 24);
         root.setPadding(pad, dp(activity, 4), pad, 0);
-
         addSection(root, "Version", getVersionName(activity), false, null);
-
         StringBuilder changes = new StringBuilder();
         for (String change : CHANGES) changes.append("• ").append(change).append('\n');
         addSection(root, "Changes", changes.toString().trim(), false, null);
-
         addSection(root, "Developer", "Zehen", false, null);
         addSection(root, "Telegram", "@Zehen0i", true, TELEGRAM);
         addSection(root, "Support Chat", "@InstaEclipsechat", true, SUPPORT);
@@ -109,9 +102,7 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
                 .setOnCancelListener(d -> markSeen(activity))
                 .create();
         dialog.show();
-        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setAllCaps(false);
-        }
+        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setAllCaps(false);
     }
 
     private void addSection(LinearLayout root, String label, String value, boolean link, String url) {
@@ -129,10 +120,7 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
             SpannableString span = new SpannableString(value);
             span.setSpan(new ClickableSpan() {
                 @Override public void onClick(View widget) { openTelegram(context, url); }
-                @Override public void updateDrawState(TextPaint ds) {
-                    ds.setUnderlineText(true);
-                    ds.setTypeface(Typeface.DEFAULT);
-                }
+                @Override public void updateDrawState(TextPaint ds) { ds.setUnderlineText(true); ds.setTypeface(Typeface.DEFAULT); }
             }, 0, value.length(), 0);
             valueView.setText(span);
             valueView.setMovementMethod(LinkMovementMethod.getInstance());
@@ -155,8 +143,7 @@ public final class MyInstaChangelogProvider extends android.content.ContentProvi
     }
 
     private void markSeen(Context context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString(LAST_VERSION, getVersionKey(context)).apply();
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(LAST_VERSION, getVersionKey(context)).apply();
     }
 
     private static int dp(Context context, int value) {
