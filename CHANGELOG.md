@@ -1,3 +1,9 @@
+## [1.0.6](https://github.com/somilkhan/Myinsta2/compare/v1.0.5...v1.0.6) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* make profile settings hook survive 445 UI inflation ([808a8c8](https://github.com/somilkhan/Myinsta2/commit/808a8c835d05d73d96d110840f99e6f3b0d87451))
+
 ## [1.0.5](https://github.com/somilkhan/Myinsta2/compare/v1.0.4...v1.0.5) (2026-09-09)
 
 ### 🐛 Bug Fixes
