@@ -18,6 +18,9 @@ fun main() {
         }!!.first()
     )
     val loadedPatches = loadPatchesFromJar(patchFiles)
+    require(loadedPatches.isNotEmpty()) {
+        "Patch bundle contains zero discoverable patches. PatchLoader could not load any named patch classes. Refusing to publish metadata."
+    }
     val patchClassLoader = URLClassLoader(patchFiles.map { it.toURI().toURL() }.toTypedArray())
     val manifest = patchClassLoader.getResources("META-INF/MANIFEST.MF")
 
