@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/somilkhan/Myinsta2/compare/v1.1.0...v1.1.1) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* make diagnostics report actual Instagram runtime ([313ac19](https://github.com/somilkhan/Myinsta2/commit/313ac19a5a98d5d9ea4b490b3e79ce38b426a426))
+
 ## [1.1.0](https://github.com/somilkhan/Myinsta2/compare/v1.0.7...v1.1.0) (2026-09-09)
 
 ### 🐛 Bug Fixes
