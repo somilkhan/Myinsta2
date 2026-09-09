@@ -5,19 +5,35 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 
 /**
- * Installs the MyInsta settings gesture on Instagram's real profile overflow
- * control. No screen coordinates or fixed view hierarchy positions are used.
+ * Installs the MyInsta settings gesture on Instagram's real self-profile
+ * overflow control. The profile UI can be inflated/rebound after onResume,
+ * so installation is retried from the UI lifecycle instead of relying on a
+ * single timing-sensitive view-tree scan.
  */
 public final class MyInstaSettingsEntryPoint {
     private static final String ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity";
-    private static final String OVERFLOW_ID = "action_bar_overflow_icon";
-    private static final String SELF_PROFILE_MARKER_ID = "self_profile_switcher";
+    private static final String[] OVERFLOW_IDS = {
+            "action_bar_overflow_icon",
+            "action_bar_overflow",
+            "action_bar_overflow_button",
+            "overflow_menu"
+    };
+    private static final String[] SELF_PROFILE_IDS = {
+            "self_profile_switcher",
+            "profile_switcher"
+    };
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static boolean installed;
     private static final java.util.Set<View> hooked =
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static final java.util.Set<ViewTreeObserver> watchedRoots =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
     private MyInstaSettingsEntryPoint() {}
@@ -27,7 +43,7 @@ public final class MyInstaSettingsEntryPoint {
         installed = true;
         application.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
             @Override public void onActivityResumed(Activity activity) {
-                installOnProfile(activity);
+                arm(activity);
             }
             @Override public void onActivityCreated(Activity a, Bundle b) {}
             @Override public void onActivityStarted(Activity a) {}
@@ -38,29 +54,55 @@ public final class MyInstaSettingsEntryPoint {
         });
     }
 
-    private static void installOnProfile(Activity activity) {
-        if (activity.isFinishing()) return;
-        View root = activity.getWindow().getDecorView();
-        if (!(root instanceof ViewGroup)) return;
+    private static void arm(Activity activity) {
+        if (activity == null || activity.isFinishing()) return;
+        MAIN.post(() -> {
+            if (activity.isFinishing()) return;
+            View root = activity.getWindow().getDecorView();
+            if (!(root instanceof ViewGroup)) return;
+
+            installOnProfile(activity, root);
+            ViewTreeObserver observer = root.getViewTreeObserver();
+            synchronized (watchedRoots) {
+                if (!observer.isAlive() || watchedRoots.contains(observer)) {
+                    scheduleRetries(activity, root);
+                    return;
+                }
+                watchedRoots.add(observer);
+            }
+            observer.addOnGlobalLayoutListener(() -> installOnProfile(activity, root));
+            scheduleRetries(activity, root);
+        });
+    }
+
+    private static void scheduleRetries(Activity activity, View root) {
+        final int[] delays = {100, 300, 750, 1500, 3000};
+        for (int delay : delays) {
+            MAIN.postDelayed(() -> {
+                if (!activity.isFinishing() && root.isAttachedToWindow()) {
+                    installOnProfile(activity, root);
+                }
+            }, delay);
+        }
+    }
+
+    private static void installOnProfile(Activity activity, View root) {
+        if (activity.isFinishing() || !(root instanceof ViewGroup)) return;
 
         Context context = activity;
-        int selfId = context.getResources().getIdentifier(
-                SELF_PROFILE_MARKER_ID, "id", context.getPackageName());
-        int overflowId = context.getResources().getIdentifier(
-                OVERFLOW_ID, "id", context.getPackageName());
-        if (selfId == 0 || overflowId == 0) return;
+        View selfMarker = findByAnyResourceName(root, context, SELF_PROFILE_IDS);
+        if (!isVisible(selfMarker)) return;
 
-        View selfMarker = root.findViewById(selfId);
-        if (selfMarker == null || selfMarker.getVisibility() != View.VISIBLE) return;
+        View overflow = findByAnyResourceName(root, context, OVERFLOW_IDS);
+        if (!isVisible(overflow)) return;
 
-        View overflow = root.findViewById(overflowId);
-        if (overflow == null || overflow.getVisibility() != View.VISIBLE || !overflow.isShown()) return;
         synchronized (hooked) {
             if (hooked.contains(overflow)) return;
             hooked.add(overflow);
         }
+
         overflow.setOnLongClickListener(v -> {
-            if (!isStillOwnProfile(root, selfId, overflowId)) return false;
+            if (!isStillOwnProfile(root, context)) return false;
             try {
                 Intent intent = new Intent(activity, Class.forName(ACTIVITY));
                 activity.startActivity(intent);
@@ -71,10 +113,24 @@ public final class MyInstaSettingsEntryPoint {
         });
     }
 
-    private static boolean isStillOwnProfile(View root, int selfId, int overflowId) {
-        View self = root.findViewById(selfId);
-        View overflow = root.findViewById(overflowId);
-        return self != null && self.getVisibility() == View.VISIBLE
-                && overflow != null && overflow.getVisibility() == View.VISIBLE && overflow.isShown();
+    private static boolean isStillOwnProfile(View root, Context context) {
+        View self = findByAnyResourceName(root, context, SELF_PROFILE_IDS);
+        View overflow = findByAnyResourceName(root, context, OVERFLOW_IDS);
+        return isVisible(self) && isVisible(overflow);
+    }
+
+    private static View findByAnyResourceName(View root, Context context, String[] names) {
+        for (String name : names) {
+            int id = context.getResources().getIdentifier(name, "id", context.getPackageName());
+            if (id != 0) {
+                View view = root.findViewById(id);
+                if (view != null) return view;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isVisible(View view) {
+        return view != null && view.getVisibility() == View.VISIBLE && view.isShown();
     }
 }
