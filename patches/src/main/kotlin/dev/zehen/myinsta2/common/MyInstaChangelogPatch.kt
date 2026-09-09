@@ -7,6 +7,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import dev.zehen.myinsta2.shared.Constants.INSTAGRAM_445
@@ -82,33 +83,36 @@ val myInstaChangelogPatch = bytecodePatch(
         ProfileActionBarSelfSwitcherFingerprint.method.apply {
             val anchors = instructions.filter { instruction ->
                 if (instruction.opcode != Opcode.INVOKE_STATIC) return@filter false
-                val registers = instruction as? FiveRegisterInstruction ?: return@filter false
                 val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
                     ?: return@filter false
-                reference.definingClass == "LX/gAr;" &&
-                    reference.name == "A04" &&
-                    reference.returnType == "V" &&
-                    reference.parameterTypes == listOf(
-                        "Landroidx/fragment/app/FragmentActivity;",
-                        "LX/AOq;",
-                        "Lcom/instagram/common/session/UserSession;",
-                        "Ljava/lang/Integer;",
-                    ) &&
-                    registers.registerCount == 4 &&
-                    registers.registerC == 1 &&
-                    registers.registerD == 5 &&
-                    registers.registerE == 12 &&
-                    registers.registerF == 12
+                if (reference.definingClass != "LX/gAr;" ||
+                    reference.name != "A04" ||
+                    reference.returnType != "V" ||
+                    reference.parameterTypes.size != 4 ||
+                    reference.parameterTypes.first() != "Landroidx/fragment/app/FragmentActivity;"
+                ) return@filter false
+
+                when (instruction) {
+                    is FiveRegisterInstruction -> instruction.registerCount == 4
+                    is RegisterRangeInstruction -> instruction.registerCount == 4
+                    else -> false
+                }
             }
 
             require(anchors.size == 1) {
-                "MyInsta2: expected exactly one exact 445 profile action-bar anchor, found ${anchors.size}"
+                "MyInsta2: expected exactly one 445 profile action-bar anchor after Piko transformation, found ${anchors.size}"
             }
 
             val anchor = anchors.single()
+            val activityRegister = when (anchor) {
+                is FiveRegisterInstruction -> anchor.registerC
+                is RegisterRangeInstruction -> anchor.startRegister
+                else -> error("MyInsta2: unsupported 445 action-bar invoke register encoding: ${anchor.javaClass.name}")
+            }
+
             addInstructions(
                 anchor.location.index + 1,
-                "invoke-static {v1}, Ldev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint;->onProfileActionBarReady(Landroid/app/Activity;)V",
+                "invoke-static {v$activityRegister}, Ldev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint;->onProfileActionBarReady(Landroid/app/Activity;)V",
             )
         }
     }
