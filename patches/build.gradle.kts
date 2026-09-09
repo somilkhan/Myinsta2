@@ -22,8 +22,8 @@ dependencies {
 
 tasks {
     register<JavaExec>("generatePatchesList") {
-        description = "Generate Morphe patch metadata"
-        dependsOn(build)
+        description = "Generate Morphe patch metadata from the Android-ready DEX bundle"
+        dependsOn("buildAndroid")
         classpath = sourceSets["main"].runtimeClasspath + patchListGeneratorClasspath
         mainClass.set("util.PatchListGeneratorKt")
     }
