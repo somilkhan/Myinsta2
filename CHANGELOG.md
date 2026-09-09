@@ -1,3 +1,9 @@
+## [1.1.5](https://github.com/somilkhan/Myinsta2/compare/v1.1.4...v1.1.5) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* **settings:** arm profile overflow long-press reliably ([8c63cbd](https://github.com/somilkhan/Myinsta2/commit/8c63cbd019918f3e5e969139853902c64865c498))
+
 ## [1.1.4](https://github.com/somilkhan/Myinsta2/compare/v1.1.3...v1.1.4) (2026-09-09)
 
 ### 🐛 Bug Fixes
