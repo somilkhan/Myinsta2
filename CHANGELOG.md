@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/somilkhan/Myinsta2/compare/v1.1.1...v1.1.2) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* match actual Instagram 445 settings hook signature ([4777249](https://github.com/somilkhan/Myinsta2/commit/47772494aa8d950cc8abb6d13462ebc6da7c6cad))
+
 ## [1.1.1](https://github.com/somilkhan/Myinsta2/compare/v1.1.0...v1.1.1) (2026-09-09)
 
 ### 🐛 Bug Fixes

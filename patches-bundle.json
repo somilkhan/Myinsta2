@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-09T22:21:40",
-  "description": "## [1.1.1](https://github.com/somilkhan/Myinsta2/compare/v1.1.0...v1.1.1) (2026-09-09)\n\n### 🐛 Bug Fixes\n\n* make diagnostics report actual Instagram runtime ([313ac19](https://github.com/somilkhan/Myinsta2/commit/313ac19a5a98d5d9ea4b490b3e79ce38b426a426))",
-  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.1.1/patches-1.1.1.mpp",
+  "created_at": "2026-09-09T22:41:41",
+  "description": "## [1.1.2](https://github.com/somilkhan/Myinsta2/compare/v1.1.1...v1.1.2) (2026-09-09)\n\n### 🐛 Bug Fixes\n\n* match actual Instagram 445 settings hook signature ([4777249](https://github.com/somilkhan/Myinsta2/commit/47772494aa8d950cc8abb6d13462ebc6da7c6cad))",
+  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.1.2/patches-1.1.2.mpp",
   "signature_download_url": "",
-  "version": "1.1.1"
+  "version": "1.1.2"
 }
