@@ -31,8 +31,9 @@ public final class MyInstaDiagnostics {
         try {
             StringWriter sw = new StringWriter();
             if (throwable != null) throwable.printStackTrace(new PrintWriter(sw));
+            String stack = sw.toString();
             String message = String.format(Locale.US, "[%s] %s\n%s", component, stage,
-                    sw.length() == 0 ? "Unknown error" : sw.toString());
+                    stack.isEmpty() ? "Unknown error" : stack);
             if (message.length() > MAX_ERROR_CHARS) message = message.substring(0, MAX_ERROR_CHARS) + "\n[truncated]";
             SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             String old = prefs.getString(ERRORS, "");
