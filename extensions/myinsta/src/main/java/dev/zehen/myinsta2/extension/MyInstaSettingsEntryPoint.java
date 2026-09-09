@@ -12,13 +12,14 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
 /**
- * Installs the MyInsta settings gesture on Instagram's real self-profile
- * overflow control. The profile UI can be inflated/rebound after onResume,
- * so installation is retried from the UI lifecycle instead of relying on a
- * single timing-sensitive view-tree scan.
+ * Installs the MyInsta settings gesture on Instagram's self-profile overflow
+ * control. This code deliberately does not depend on view coordinates or
+ * visible text.
  */
 public final class MyInstaSettingsEntryPoint {
     private static final String ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity";
+    private static final String ORIGINAL_RESOURCE_PACKAGE = "com.instagram.android";
+
     private static final String[] OVERFLOW_IDS = {
             "action_bar_overflow_icon",
             "action_bar_overflow",
@@ -29,10 +30,9 @@ public final class MyInstaSettingsEntryPoint {
             "self_profile_switcher",
             "profile_switcher"
     };
+
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static boolean installed;
-    private static final java.util.Set<View> hooked =
-            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
     private static final java.util.Set<ViewTreeObserver> watchedRoots =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
@@ -42,9 +42,7 @@ public final class MyInstaSettingsEntryPoint {
         if (application == null || installed) return;
         installed = true;
         application.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
-            @Override public void onActivityResumed(Activity activity) {
-                arm(activity);
-            }
+            @Override public void onActivityResumed(Activity activity) { arm(activity); }
             @Override public void onActivityCreated(Activity a, Bundle b) {}
             @Override public void onActivityStarted(Activity a) {}
             @Override public void onActivityPaused(Activity a) {}
@@ -64,13 +62,11 @@ public final class MyInstaSettingsEntryPoint {
             installOnProfile(activity, root);
             ViewTreeObserver observer = root.getViewTreeObserver();
             synchronized (watchedRoots) {
-                if (!observer.isAlive() || watchedRoots.contains(observer)) {
-                    scheduleRetries(activity, root);
-                    return;
+                if (observer.isAlive() && !watchedRoots.contains(observer)) {
+                    watchedRoots.add(observer);
+                    observer.addOnGlobalLayoutListener(() -> installOnProfile(activity, root));
                 }
-                watchedRoots.add(observer);
             }
-            observer.addOnGlobalLayoutListener(() -> installOnProfile(activity, root));
             scheduleRetries(activity, root);
         });
     }
@@ -96,11 +92,8 @@ public final class MyInstaSettingsEntryPoint {
         View overflow = findByAnyResourceName(root, context, OVERFLOW_IDS);
         if (!isVisible(overflow)) return;
 
-        synchronized (hooked) {
-            if (hooked.contains(overflow)) return;
-            hooked.add(overflow);
-        }
-
+        // Do not cache the View object. Instagram can recycle/rebind the same
+        // view and replace its listener after profile UI inflation.
         overflow.setOnLongClickListener(v -> {
             if (!isStillOwnProfile(root, context)) return false;
             try {
@@ -122,6 +115,9 @@ public final class MyInstaSettingsEntryPoint {
     private static View findByAnyResourceName(View root, Context context, String[] names) {
         for (String name : names) {
             int id = context.getResources().getIdentifier(name, "id", context.getPackageName());
+            if (id == 0) {
+                id = context.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
+            }
             if (id != 0) {
                 View view = root.findViewById(id);
                 if (view != null) return view;
