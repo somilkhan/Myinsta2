@@ -11,7 +11,7 @@ Add this repository once as a **Remote Patch Source** in Morphe Manager:
 Morphe will read the generated `patches-bundle.json` and follow each versioned release automatically. New releases use semantic version tags and versioned `.mpp` assets, so you do **not** need to manually download the MPP after every update.
 
 <!-- PATCHES_START -->
-> **[v1.0.3](https://github.com/somilkhan/Myinsta2/releases/tag/v1.0.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+> **[v1.0.4](https://github.com/somilkhan/Myinsta2/releases/tag/v1.0.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
 
 | Patch | Description | Options |
 |---|---|---|

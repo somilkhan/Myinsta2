@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/somilkhan/Myinsta2/compare/v1.0.3...v1.0.4) (2026-09-09)
+
+### 🐛 Bug Fixes
+
+* align release bundle with Manager loader ([70e2786](https://github.com/somilkhan/Myinsta2/commit/70e278610f29cec618c7f97616c72c79663e54f4))
+
 ## [1.0.3](https://github.com/somilkhan/Myinsta2/compare/v1.0.2...v1.0.3) (2026-09-08)
 
 ### 🐛 Bug Fixes
