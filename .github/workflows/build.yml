@@ -58,6 +58,28 @@ jobs:
             fi
           done < <(grep -RIlz 'Ldev/zehen/myinsta2/extension/' patches/src/main/kotlin --include='*.kt')
 
+      - name: Audit verified 445 settings entry point
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch='patches/src/main/kotlin/dev/zehen/myinsta2/common/MyInstaChangelogPatch.kt'
+          entry='extensions/myinsta/src/main/java/dev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint.java'
+          grep -Fq 'definingClass = "LX/Dyw;"' "$patch"
+          grep -Fq 'name = "A05"' "$patch"
+          grep -Fq 'parameters = listOf("LX/AOq;", "I")' "$patch"
+          grep -Fq 'reference.definingClass == "LX/gAr;"' "$patch"
+          grep -Fq 'reference.name == "A04"' "$patch"
+          grep -Fq 'registers.registerC == 1' "$patch"
+          grep -Fq 'registers.registerD == 7' "$patch"
+          grep -Fq 'registers.registerE == 2' "$patch"
+          grep -Fq 'registers.registerF == 0' "$patch"
+          grep -Fq 'registers.registerG == 1' "$patch"
+          grep -Fq 'onProfileActionBarReady(Landroid/app/Activity;)V' "$patch"
+          grep -Fq 'self_profile_switcher' "$entry"
+          grep -Fq 'action_bar_overflow_icon' "$entry"
+          grep -Fq 'more_button_click_area' "$entry"
+          echo 'Verified 445 settings source guard passed.'
+
       - name: Build Morphe bundle
         run: gradle buildAndroid --stacktrace
 
@@ -103,6 +125,7 @@ jobs:
             'dev/zehen/myinsta2/extension/CommentCopyUtils' \
             'dev/zehen/myinsta2/extension/MessageUtils' \
             'dev/zehen/myinsta2/extension/MyInstaChangelogProvider' \
+            'dev/zehen/myinsta2/extension/MyInstaDiagnostics' \
             'dev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint' \
             'dev/zehen/myinsta2/extension/MyInstaSettingsActivity'; do
             if ! grep -Fq "$class_fragment" "$RUNNER_TEMP/extension-strings.txt"; then
