@@ -73,6 +73,10 @@ jobs:
             echo 'Published MPP has no valid Patcher-Version.' >&2
             exit 1
           }
+          if ! unzip -l "$tmp" | grep -Eq '[[:space:]]classes([0-9]+)?\.dex$'; then
+            echo 'Published MPP contains no DEX entries; Morphe Manager cannot load patches from this bundle.' >&2
+            exit 1
+          fi
           unzip -l "$tmp" | grep -Fq 'extensions/myinsta.mpe' || {
             echo 'Published MPP is missing extensions/myinsta.mpe.' >&2
             exit 1
