@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.util.Log;
 
@@ -20,6 +21,7 @@ public final class MyInstaDiagnostics {
     private static final String LAUNCH_COUNT = "settings_launch_count";
     private static final int MAX_ERRORS = 20;
     private static final int MAX_ERROR_CHARS = 3500;
+    private static final String INSTAGRAM_PACKAGE = "com.instagram.android";
 
     private MyInstaDiagnostics() {}
 
@@ -54,11 +56,23 @@ public final class MyInstaDiagnostics {
     public static String buildReport(Context context) {
         StringBuilder out = new StringBuilder(8192);
         append(out, "MyInsta2", "Diagnostics");
-        append(out, "MyInsta2 version", packageVersion(context));
-        append(out, "Instagram version", packageVersion(context));
+        append(out, "MyInsta2 version", packageVersion(context, context.getPackageName()));
+
+        PackageInfo instagram = packageInfo(context, INSTAGRAM_PACKAGE);
+        String instagramVersion = "Unavailable";
+        String instagramCode = "Unavailable";
+        if (instagram != null) {
+            instagramVersion = String.valueOf(instagram.versionName);
+            instagramCode = String.valueOf(Build.VERSION.SDK_INT >= 28
+                    ? instagram.getLongVersionCode() : instagram.versionCode);
+        }
+        append(out, "Instagram package", INSTAGRAM_PACKAGE);
+        append(out, "Instagram version", instagramVersion);
+        append(out, "Instagram versionCode", instagramCode);
         append(out, "Android", Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
         append(out, "Device", Build.MANUFACTURER + " " + Build.MODEL);
-        append(out, "Architecture", Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "Unknown");
+        append(out, "Architecture", Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0
+                ? joinAbis(Build.SUPPORTED_ABIS) : "Unknown");
         append(out, "Target", "Instagram 445.0.0.45.83 / arm64-v8a");
         append(out, "Runtime extension", "Loaded — diagnostics provider is executing");
 
@@ -88,18 +102,36 @@ public final class MyInstaDiagnostics {
     }
 
     private static void increment(Context context, String key) {
-        SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        p.edit().putInt(key, p.getInt(key, 0) + 1).apply();
+        try {
+            SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            p.edit().putInt(key, p.getInt(key, 0) + 1).apply();
+        } catch (Throwable ignored) {
+            // Best effort only.
+        }
     }
 
-    private static String packageVersion(Context context) {
+    private static PackageInfo packageInfo(Context context, String packageName) {
         try {
-            android.content.pm.PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            long code = Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
-            return String.valueOf(info.versionName) + " (" + code + ")";
+            return context.getPackageManager().getPackageInfo(packageName, 0);
         } catch (Throwable ignored) {
-            return "Unknown";
+            return null;
         }
+    }
+
+    private static String packageVersion(Context context, String packageName) {
+        PackageInfo info = packageInfo(context, packageName);
+        if (info == null) return "Unknown";
+        long code = Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+        return String.valueOf(info.versionName) + " (" + code + ")";
+    }
+
+    private static String joinAbis(String[] abis) {
+        StringBuilder result = new StringBuilder();
+        for (String abi : abis) {
+            if (result.length() > 0) result.append(", ");
+            result.append(abi);
+        }
+        return result.toString();
     }
 
     private static void append(StringBuilder out, String key, String value) {
