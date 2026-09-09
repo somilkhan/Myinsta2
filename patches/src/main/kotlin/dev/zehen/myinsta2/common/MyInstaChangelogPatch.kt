@@ -17,12 +17,12 @@ private const val PROVIDER = "dev.zehen.myinsta2.extension.MyInstaChangelogProvi
 private const val PROVIDER_AUTHORITY = "dev.zehen.myinsta2.changelog"
 private const val SETTINGS_ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity"
 
-/** Exact 445 profile action-bar path that emits the self-profile switcher event. */
+/** Exact Instagram 445 profile action-bar path. */
 private object ProfileActionBarSelfSwitcherFingerprint : Fingerprint(
     definingClass = "LX/Dyw;",
     name = "A05",
     returnType = "V",
-    parameters = listOf("LX/AOq;", "I"),
+    parameters = listOf("LX/AOq;", "LX/KCa;"),
 )
 
 /** Adds runtime components used by the first-launch/update changelog and settings UI. */
@@ -80,31 +80,35 @@ val myInstaChangelogPatch = bytecodePatch(
 
     execute {
         ProfileActionBarSelfSwitcherFingerprint.method.apply {
-            val anchor = instructions.firstOrNull { instruction ->
-                if (instruction.opcode != Opcode.INVOKE_STATIC) return@firstOrNull false
-                val registers = instruction as? FiveRegisterInstruction ?: return@firstOrNull false
+            val anchors = instructions.filter { instruction ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC) return@filter false
+                val registers = instruction as? FiveRegisterInstruction ?: return@filter false
                 val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                    ?: return@firstOrNull false
+                    ?: return@filter false
                 reference.definingClass == "LX/gAr;" &&
                     reference.name == "A04" &&
                     reference.returnType == "V" &&
                     reference.parameterTypes == listOf(
                         "Landroidx/fragment/app/FragmentActivity;",
+                        "LX/AOq;",
                         "Lcom/instagram/common/session/UserSession;",
-                        "J",
-                        "Landroidx/fragment/app/FragmentActivity;",
+                        "Ljava/lang/Integer;",
                     ) &&
                     registers.registerCount == 4 &&
                     registers.registerC == 1 &&
-                    registers.registerD == 7 &&
-                    registers.registerE == 2 &&
-                    registers.registerF == 0 &&
-                    registers.registerG == 1
-            } ?: error("MyInsta2: exact 445 profile action-bar self-switcher anchor not found")
+                    registers.registerD == 5 &&
+                    registers.registerE == 12 &&
+                    registers.registerF == 12
+            }
 
+            require(anchors.size == 1) {
+                "MyInsta2: expected exactly one exact 445 profile action-bar anchor, found ${anchors.size}"
+            }
+
+            val anchor = anchors.single()
             addInstructions(
                 anchor.location.index + 1,
-                "invoke-static {v0}, Ldev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint;->onProfileActionBarReady(Landroid/app/Activity;)V",
+                "invoke-static {v1}, Ldev/zehen/myinsta2/extension/MyInstaSettingsEntryPoint;->onProfileActionBarReady(Landroid/app/Activity;)V",
             )
         }
     }
