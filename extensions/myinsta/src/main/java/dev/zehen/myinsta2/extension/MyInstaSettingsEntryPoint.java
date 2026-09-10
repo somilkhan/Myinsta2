@@ -15,7 +15,6 @@ public final class MyInstaSettingsEntryPoint {
             "more_button", "more_button_click_area", "overflow_menu"
     };
     private static final long[] ARM_DELAYS_MS = {50L, 150L, 400L, 800L, 1500L, 2500L, 4000L, 6000L};
-    private static final long REARM_WINDOW_MS = 7000L;
     private static final long LAUNCH_DEBOUNCE_MS = 1200L;
 
     private MyInstaSettingsEntryPoint() {}
@@ -61,18 +60,17 @@ public final class MyInstaSettingsEntryPoint {
     }
 
     private static void armListenerChain(Activity activity, View candidate) {
-        long deadline = System.currentTimeMillis() + REARM_WINDOW_MS;
         View current = candidate;
         int depth = 0;
         while (current != null && depth++ < 4) {
             if (isVisible(current)) {
-                installLongPress(current, activity, deadline);
+                installLongPress(current, activity);
             }
             current = current.getParent() instanceof View ? (View) current.getParent() : null;
         }
     }
 
-    private static void installLongPress(View view, Activity activity, long deadline) {
+    private static void installLongPress(View view, Activity activity) {
         view.setOnLongClickListener(v -> {
             long now = System.currentTimeMillis();
             Long lastLaunch = (Long) v.getTag(android.R.id.custom);
@@ -89,18 +87,6 @@ public final class MyInstaSettingsEntryPoint {
                 return false;
             }
         });
-
-        // Instagram/Piko may replace the view listener after the action-bar is built.
-        // Keep re-arming the same resource-targeted view chain for a bounded window so
-        // view recreation and late listener installation cannot silently remove the
-        // MyInsta2 long-press gesture.
-        if (System.currentTimeMillis() < deadline && view.isAttachedToWindow()) {
-            view.postDelayed(() -> {
-                if (view.isAttachedToWindow() && activity.getWindow() != null && !activity.isFinishing()) {
-                    installLongPress(view, activity, deadline);
-                }
-            }, 250L);
-        }
     }
 
     private static boolean isVisible(View view) {
