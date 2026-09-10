@@ -9,12 +9,14 @@ import android.view.ViewGroup;
 public final class MyInstaSettingsEntryPoint {
     private static final String ACTIVITY = "dev.zehen.myinsta2.extension.MyInstaSettingsActivity";
     private static final String ORIGINAL_RESOURCE_PACKAGE = "com.instagram.android";
-    private static final String[] ACTION_BAR_IDS = {"profile_action_bar", "profile_action_bar_stub"};
     private static final String[] OVERFLOW_IDS = {
             "action_bar_overflow_icon", "action_bar_overflow", "action_bar_overflow_button",
             "overflow_button", "overflow_button_right", "overflow_button_layout",
             "more_button", "more_button_click_area", "overflow_menu"
     };
+    private static final long[] ARM_DELAYS_MS = {50L, 150L, 400L, 800L, 1500L, 2500L, 4000L, 6000L};
+    private static final long REARM_WINDOW_MS = 7000L;
+    private static final long LAUNCH_DEBOUNCE_MS = 1200L;
 
     private MyInstaSettingsEntryPoint() {}
 
@@ -25,55 +27,80 @@ public final class MyInstaSettingsEntryPoint {
             View root = activity.getWindow().getDecorView();
             if (!(root instanceof ViewGroup)) return;
             MyInstaDiagnostics.recordSettingsHook(activity);
-            arm(activity, root, 0);
+            armUntilStable(activity, root, 0);
         } catch (Throwable error) {
             MyInstaDiagnostics.error(activity, "SettingsEntryPoint", "arm", error);
         }
     }
 
-    private static void arm(Activity activity, View root, int attempt) {
-        // Do not scope lookup to profile_action_bar/profile_action_bar_stub. On 445 the
-        // stub can remain in the hierarchy after inflation, which would hide the actual
-        // overflow button from findViewById(). The verified A05 hook already identifies
-        // the profile action-bar setup, so search the active hierarchy directly.
-        View overflow = findByAnyResourceName(root, activity, OVERFLOW_IDS);
-        if (isVisible(overflow)) {
-            final View finalOverflow = overflow;
-            finalOverflow.setOnLongClickListener(v -> {
-                try {
-                    Intent intent = new Intent(activity, Class.forName(ACTIVITY));
-                    activity.startActivity(intent);
-                    MyInstaDiagnostics.recordSettingsLaunch(activity);
-                    return true;
-                } catch (Throwable error) {
-                    MyInstaDiagnostics.error(activity, "SettingsEntryPoint", "launch", error);
-                    return false;
-                }
-            });
-            return;
+    private static void armUntilStable(Activity activity, View root, int attempt) {
+        if (activity.isFinishing() || root == null || !root.isAttachedToWindow()) return;
+
+        View overflow = findOverflowCandidate(root, activity);
+        if (overflow != null) {
+            armListenerChain(activity, overflow);
         }
 
-        if (attempt >= 5) return;
-        long delay = new long[]{50, 150, 400, 800, 1500}[attempt];
+        if (attempt >= ARM_DELAYS_MS.length) return;
         final View retryRoot = root;
-        root.postDelayed(() -> {
-            if (!activity.isFinishing() && retryRoot.isAttachedToWindow()) {
-                arm(activity, retryRoot, attempt + 1);
-            }
-        }, delay);
+        final long delay = ARM_DELAYS_MS[attempt];
+        root.postDelayed(() -> armUntilStable(activity, retryRoot, attempt + 1), delay);
     }
 
-    private static View findByAnyResourceName(View root, Activity activity, String[] names) {
-        if (root == null) return null;
-        for (String name : names) {
+    private static View findOverflowCandidate(View root, Activity activity) {
+        for (String name : OVERFLOW_IDS) {
             int id = activity.getResources().getIdentifier(name, "id", activity.getPackageName());
-            if (id == 0) id = activity.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
-            if (id != 0) {
-                View view = root.findViewById(id);
-                if (view != null) return view;
+            if (id == 0) {
+                id = activity.getResources().getIdentifier(name, "id", ORIGINAL_RESOURCE_PACKAGE);
             }
+            if (id == 0) continue;
+            View view = root.findViewById(id);
+            if (isVisible(view)) return view;
         }
         return null;
+    }
+
+    private static void armListenerChain(Activity activity, View candidate) {
+        long deadline = System.currentTimeMillis() + REARM_WINDOW_MS;
+        View current = candidate;
+        int depth = 0;
+        while (current != null && depth++ < 4) {
+            if (isVisible(current)) {
+                installLongPress(current, activity, deadline);
+            }
+            current = current.getParent() instanceof View ? (View) current.getParent() : null;
+        }
+    }
+
+    private static void installLongPress(View view, Activity activity, long deadline) {
+        view.setOnLongClickListener(v -> {
+            long now = System.currentTimeMillis();
+            Long lastLaunch = (Long) v.getTag(android.R.id.custom);
+            if (lastLaunch != null && now - lastLaunch < LAUNCH_DEBOUNCE_MS) return true;
+            v.setTag(android.R.id.custom, now);
+
+            try {
+                Intent intent = new Intent(activity, Class.forName(ACTIVITY));
+                activity.startActivity(intent);
+                MyInstaDiagnostics.recordSettingsLaunch(activity);
+                return true;
+            } catch (Throwable error) {
+                MyInstaDiagnostics.error(activity, "SettingsEntryPoint", "launch", error);
+                return false;
+            }
+        });
+
+        // Instagram/Piko may replace the view listener after the action-bar is built.
+        // Keep re-arming the same resource-targeted view chain for a bounded window so
+        // view recreation and late listener installation cannot silently remove the
+        // MyInsta2 long-press gesture.
+        if (System.currentTimeMillis() < deadline && view.isAttachedToWindow()) {
+            view.postDelayed(() -> {
+                if (view.isAttachedToWindow() && activity.getWindow() != null && !activity.isFinishing()) {
+                    installLongPress(view, activity, deadline);
+                }
+            }, 250L);
+        }
     }
 
     private static boolean isVisible(View view) {
