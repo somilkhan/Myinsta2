@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/somilkhan/Myinsta2/compare/v1.1.5...v1.1.6) (2026-09-10)
+
+### 🐛 Bug Fixes
+
+* **settings:** persist profile overflow long-press through late view listeners ([e9173a6](https://github.com/somilkhan/Myinsta2/commit/e9173a6ff2813a599a164b8fdb0dd7c17b2baf63))
+* **settings:** prevent redundant rearm timers during profile long-press ([069d0b8](https://github.com/somilkhan/Myinsta2/commit/069d0b864fcf07694e7e71db7eeae59ba1fe3304))
+
 ## [1.1.5](https://github.com/somilkhan/Myinsta2/compare/v1.1.4...v1.1.5) (2026-09-09)
 
 ### 🐛 Bug Fixes

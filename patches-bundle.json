@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-09T23:52:45",
-  "description": "## [1.1.5](https://github.com/somilkhan/Myinsta2/compare/v1.1.4...v1.1.5) (2026-09-09)\n\n### 🐛 Bug Fixes\n\n* **settings:** arm profile overflow long-press reliably ([8c63cbd](https://github.com/somilkhan/Myinsta2/commit/8c63cbd019918f3e5e969139853902c64865c498))",
-  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.1.5/patches-1.1.5.mpp",
+  "created_at": "2026-09-10T00:10:39",
+  "description": "## [1.1.6](https://github.com/somilkhan/Myinsta2/compare/v1.1.5...v1.1.6) (2026-09-10)\n\n### 🐛 Bug Fixes\n\n* **settings:** persist profile overflow long-press through late view listeners ([e9173a6](https://github.com/somilkhan/Myinsta2/commit/e9173a6ff2813a599a164b8fdb0dd7c17b2baf63))\n* **settings:** prevent redundant rearm timers during profile long-press ([069d0b8](https://github.com/somilkhan/Myinsta2/commit/069d0b864fcf07694e7e71db7eeae59ba1fe3304))",
+  "download_url": "https://github.com/somilkhan/Myinsta2/releases/download/v1.1.6/patches-1.1.6.mpp",
   "signature_download_url": "",
-  "version": "1.1.5"
+  "version": "1.1.6"
 }
